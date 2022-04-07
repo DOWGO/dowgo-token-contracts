@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "npx hardhat test",
-    "deploy":"npx hardhat run scripts/deploy.ts",
-    "lint":"npx eslint '**/*.{js,ts}' --fix && npx prettier '**/*.{json,sol,md}' --write && npx solhint 'contracts/**/*.sol' --fix"
+    "deploy": "npx hardhat run scripts/deploy.ts",
+    "lint": "npx eslint '**/*.{js,ts}' --fix && npx prettier '**/*.{json,sol,md}' --write && npx solhint 'contracts/**/*.sol' --fix"
   },
   "repository": {
     "type": "git",
@@ -49,5 +49,8 @@
     "ts-node": "^10.7.0",
     "typechain": "^5.2.0",
     "typescript": "^4.6.3"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.5.0"
   }
 }
