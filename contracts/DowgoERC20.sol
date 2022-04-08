@@ -5,16 +5,18 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-contract DWGToken is ERC20 {
+import "hardhat/console.sol"; //TODO: get rid of this in prod
+
+contract DowgoERC20 is ERC20 {
     using SafeMath for uint256;
 
     // + Dowgo Token + // TODO: those are made useless by the use or ERC20
 
     /// Total supply of Dowgo tokens
-    uint256 public totalDowgoSupply;
+    // uint256 public totalDowgoSupply;
 
-    // Balances of all owners
-    mapping(address => uint256) public memberBalances;
+    // // Balances of all owners
+    // mapping(address => uint256) public memberBalances;
 
     // + Ethereum +
 
@@ -27,27 +29,28 @@ contract DWGToken is ERC20 {
     // Price in wei/Dowgo
     uint256 public currentPrice;
 
-    constructor(uint256 initialSupply) ERC20("Dowgo", "DWG") {
+    constructor(uint256 initialSupply,uint256 initialPrice) ERC20("Dowgo", "DWG") {
+        currentPrice=initialPrice;
         _mint(msg.sender, initialSupply);
     }
 
     // Buy Dowgo tokens by sending enough ETH
-    function buy_dowgo(uint256 amount) external payable {
+    function buy_dowgo(uint256 dowgoAmount) external payable {
         // Check that the user sent enough ETH
-        require(msg.value>=amount.mul(currentPrice).div(10**18));
+        require(msg.value>=dowgoAmount.mul(currentPrice).div(10**18));
 
         // Add Eth to the total reserve
-        totalEthSupply = totalEthSupply.add(msg.value);
+        totalEthSupply = totalEthSupply.add(msg.value); // TODO check balance dif?
 
         //interactions
-        _mint(msg.sender, amount); // TODO check result?
+        _mint(msg.sender, dowgoAmount); // TODO check result?
     }
 
     // Sell Dowgo tokens against ETH
-    function sell_dowgo(uint256 amount) external {
-        uint ethAmount=amount.mul(10**18).div(currentPrice);
+    function sell_dowgo(uint256 dowgoAmount) external {
+        uint ethAmount=dowgoAmount.mul(currentPrice).div(10**18);
         // Check that the user owns enough tokens
-        require(balanceOf(msg.sender)>=amount);
+        require(balanceOf(msg.sender)>=dowgoAmount);
         //this should never happen, hence the asset
         assert(totalEthSupply>=ethAmount); 
 
@@ -56,11 +59,11 @@ contract DWGToken is ERC20 {
         ethUserBalances[msg.sender]=ethUserBalances[msg.sender].add(ethAmount);
 
         //interactions
-        _burn(msg.sender, amount); // TODO check result?
+        _burn(msg.sender, dowgoAmount); // TODO check result?
     }
 
     // Cash out available eth balance for a user
-    function cash_out_eth(uint256 ethAmount) external payable {
+    function withdraw_eth(uint256 ethAmount) external payable {
         // Check that the user owns enough eth on the smart contract
         require(ethAmount<=ethUserBalances[msg.sender]);
 
@@ -68,7 +71,7 @@ contract DWGToken is ERC20 {
         ethUserBalances[msg.sender]=ethUserBalances[msg.sender].sub(ethAmount);
 
         //interactions
-        (bool sent, bytes memory data) = msg.sender.call{value: ethAmount}("");
-        require(sent, "Failed to cash out Ether");
+        (bool sent,) = msg.sender.call{value: ethAmount}("");
+        require(sent, "Failed to cash out Ether ");
     }
 }

@@ -6,6 +6,7 @@
   "scripts": {
     "test": "npx hardhat test",
     "deploy": "npx hardhat run scripts/deploy.ts",
+    "testnet": "npx ganache-cli --seed dowgo",
     "lint": "npx eslint '**/*.{js,ts}' --fix && npx prettier '**/*.{json,sol,md}' --write && npx solhint 'contracts/**/*.sol' --fix"
   },
   "repository": {

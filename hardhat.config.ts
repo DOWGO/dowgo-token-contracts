@@ -22,9 +22,15 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
 
+const testPrivKey1="0x1d0be9777146d0f5a455baf3a1e6310aa9610fd96e1d238ae5277895dd7a6a49"
+
 const config: HardhatUserConfig = {
   solidity: "0.8.4",
   networks: {
+    // local: {
+    //   url: "127.0.0.1:8545",
+    //   accounts: [testPrivKey1],
+    // },
     ropsten: {
       url: process.env.ROPSTEN_URL || "",
       accounts:
