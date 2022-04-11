@@ -2,21 +2,14 @@
 pragma solidity ^0.8.0;
 // TODO: lock this
 
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import "hardhat/console.sol"; //TODO: get rid of this in prod
 
-contract DowgoERC20 is ERC20 {
+contract DowgoERC20 is ERC20, AccessControl {
     using SafeMath for uint256;
-
-    // + Dowgo Token + // TODO: those are made useless by the use or ERC20
-
-    /// Total supply of Dowgo tokens
-    // uint256 public totalDowgoSupply;
-
-    // // Balances of all owners
-    // mapping(address => uint256) public memberBalances;
 
     // + Ethereum +
 
@@ -27,14 +20,66 @@ contract DowgoERC20 is ERC20 {
     mapping(address => uint256) public ethUserBalances;
 
     // Price in wei/Dowgo
-    uint256 public currentPrice;
+    uint256 public currentPrice; //TODO: reduce int range?
 
-    constructor(uint256 initialSupply,uint256 initialPrice) ERC20("Dowgo", "DWG") {
-        currentPrice=initialPrice;
+    // Min collateral ratio out of 10000
+    uint256 public minRatio; //TODO: reduce int range?
+
+    // Events
+
+    /**
+     * @dev Emitted when a user buys dowgo tokens from the contract
+     *
+     * Note that `value` may be zero.
+     */
+    event BuyDowgo(address indexed buyer, uint256 amount);
+
+    /**
+     * @dev Emitted when a user sells dowgo tokens back to the contract
+     *
+     * Note that `value` may be zero.
+     */
+    event SellDowgo(address indexed seller, uint256 amount);
+
+    /**
+     * @dev Emitted when a user withdraws their eth balance from the contract
+     *
+     * Note that `value` may be zero.
+     */
+    event WithdrawEth(address indexed user, uint256 amount);
+
+
+    /**
+     * @dev Emitted when a user withdraws their eth balance from the contract
+     *
+     * Note that `value` may be zero.
+     */
+    event EthSupplyIncreased(uint256 amount);
+
+
+    /**
+     * @dev Emitted when a user withdraws their eth balance from the contract
+     *
+     * Note that `value` may be zero.
+     */
+    event EthSupplyDecreased(uint256 amount);
+
+    constructor(uint256 initialSupply,uint256 _initialPrice,uint256 _minRatio) ERC20("Dowgo", "DWG") {
+        currentPrice=_initialPrice;
+        minRatio=_minRatio;
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _mint(msg.sender, initialSupply);
     }
 
-    // Buy Dowgo tokens by sending enough ETH
+    // Grant a user the role of admin //TODO: remove admin?
+    function grant_admin(address newAdmin)
+        public
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        grantRole(DEFAULT_ADMIN_ROLE, newAdmin);
+    }
+
+    // Buy Dowgo tokens by sending enough ETH // TODO: allow zero tsf?
     function buy_dowgo(uint256 dowgoAmount) external payable {
         // Check that the user sent enough ETH
         require(msg.value>=dowgoAmount.mul(currentPrice).div(10**18));
@@ -44,6 +89,7 @@ contract DowgoERC20 is ERC20 {
 
         //interactions
         _mint(msg.sender, dowgoAmount); // TODO check result?
+        emit BuyDowgo(msg.sender, dowgoAmount);
     }
 
     // Sell Dowgo tokens against ETH
@@ -60,6 +106,7 @@ contract DowgoERC20 is ERC20 {
 
         //interactions
         _burn(msg.sender, dowgoAmount); // TODO check result?
+        emit SellDowgo(msg.sender, dowgoAmount);
     }
 
     // Cash out available eth balance for a user
@@ -73,5 +120,23 @@ contract DowgoERC20 is ERC20 {
         //interactions
         (bool sent,) = msg.sender.call{value: ethAmount}("");
         require(sent, "Failed to cash out Ether ");
+        emit WithdrawEth(msg.sender, ethAmount);
+    }
+
+    // Increase Eth reserve of the contract
+    function increase_eth_supply() external payable onlyRole(DEFAULT_ADMIN_ROLE) {
+        // Add Eth to the total reserve
+        totalEthSupply = totalEthSupply.add(msg.value); // TODO check balance dif?
+        emit EthSupplyIncreased(msg.value);
+    }
+
+    // Increase Eth reserve of the contract
+    function decrease_eth_supply() external payable onlyRole(DEFAULT_ADMIN_ROLE) {
+        // Check that this action won't let the collateral drop under the minimum ratio
+        require(msg.value<=totalSupply().mul(currentPrice).div(10**18).mul(minRatio).div(10**4),"Cannot go under min ratio for eth reserves");
+
+        // Remove Eth from the total reserve
+        totalEthSupply = totalEthSupply.sub(msg.value); // TODO check balance dif?
+        emit EthSupplyDecreased(msg.value);
     }
 }

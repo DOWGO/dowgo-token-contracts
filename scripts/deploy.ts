@@ -17,7 +17,7 @@ async function main() {
 
   // We get the contract to deploy
   const DowgoERC20 = await ethers.getContractFactory("DowgoERC20");
-  const dowgoERC20 = await DowgoERC20.deploy(initialAmount,BigNumber.from(1000));
+  const dowgoERC20 = await DowgoERC20.deploy(initialAmount,BigNumber.from(1000),BigNumber.from(300));
 
   await dowgoERC20.deployed();
 
