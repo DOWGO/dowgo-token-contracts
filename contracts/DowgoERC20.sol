@@ -27,7 +27,7 @@ contract DowgoERC20 is ERC20, AccessControl {
 
   // Events
 
-//TODO: event descriptions
+  //TODO: event descriptions
   /**
    * @dev Emitted when a user buys dowgo tokens from the contract
    *
@@ -68,10 +68,7 @@ contract DowgoERC20 is ERC20, AccessControl {
    */
   event PriceSet(address indexed user, uint256 amount);
 
-  constructor(
-    uint256 _initialPrice,
-    uint256 _minRatio
-  ) ERC20("Dowgo", "DWG") {
+  constructor(uint256 _initialPrice, uint256 _minRatio) ERC20("Dowgo", "DWG") {
     currentPrice = _initialPrice;
     minRatio = _minRatio;
     _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -130,11 +127,14 @@ contract DowgoERC20 is ERC20, AccessControl {
   function increase_eth_supply() external payable onlyRole(DEFAULT_ADMIN_ROLE) {
     // Add Eth to the total reserve
     totalEthSupply = totalEthSupply.add(msg.value); // TODO check balance dif?
-    emit EthSupplyIncreased(msg.sender,msg.value);
+    emit EthSupplyIncreased(msg.sender, msg.value);
   }
 
   // Increase Eth reserve of the contract
-  function decrease_eth_supply(uint256 ethAmount) external onlyRole(DEFAULT_ADMIN_ROLE) {
+  function decrease_eth_supply(uint256 ethAmount)
+    external
+    onlyRole(DEFAULT_ADMIN_ROLE)
+  {
     // Check that this action won't let the collateral drop under the minimum ratio
     require(
       totalEthSupply.sub(ethAmount) >=
@@ -146,14 +146,17 @@ contract DowgoERC20 is ERC20, AccessControl {
     totalEthSupply = totalEthSupply.sub(ethAmount); // TODO check balance dif?
     ethUserBalances[msg.sender] = ethUserBalances[msg.sender].add(ethAmount);
 
-    emit EthSupplyDecreased(msg.sender,ethAmount);
+    emit EthSupplyDecreased(msg.sender, ethAmount);
   }
 
   // Set Price
-  function set_current_price(uint256 newPrice) external onlyRole(DEFAULT_ADMIN_ROLE) {
-      require(newPrice>0,"Price must be >0");
-    
-    currentPrice=newPrice;
-    emit PriceSet(msg.sender,newPrice);
+  function set_current_price(uint256 newPrice)
+    external
+    onlyRole(DEFAULT_ADMIN_ROLE)
+  {
+    require(newPrice > 0, "Price must be >0");
+
+    currentPrice = newPrice;
+    emit PriceSet(msg.sender, newPrice);
   }
 }
