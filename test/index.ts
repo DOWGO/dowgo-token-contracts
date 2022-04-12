@@ -26,8 +26,12 @@ describe("DowgoERC20", function () {
     ([owner, addr1, addr2] = await ethers.getSigners());
     // deploy contract
     const DowgoERC20Factory:DowgoERC20__factory = await ethers.getContractFactory("DowgoERC20");
-    dowgoERC20 = await DowgoERC20Factory.deploy(initialEthReserve,initialPrice,initRatio);
+    dowgoERC20 = await DowgoERC20Factory.deploy(initialPrice,initRatio);
     await dowgoERC20.deployed();
+
+    // increase total reserve
+    const increaseTx = await dowgoERC20.connect(owner).increase_eth_supply({value:initialEthReserve});
+    await increaseTx.wait();
   })
   describe("DowgoERC20 - init", function () {
     it("Should check that deployement was successful with right initial amount", async function () {
@@ -88,7 +92,7 @@ describe("DowgoERC20", function () {
       let events2=await dowgoERC20.queryFilter(eventFilter2)
       expect(events2[0]&&events2[0].args[1]&&events2[0].args[1]).to.equal(initialPrice);
 
-      // check pending eth balance 276825861887155
+      // check pending eth balance
       expect(await dowgoERC20.ethUserBalances(addr1.address)).to.equal(0);
       expect((initialEthBalance).sub((await addr1.getBalance())).lt(ONE_UNIT)).to.equal(true);
     });
@@ -106,7 +110,7 @@ describe("DowgoERC20", function () {
       // check for EthSupplyIncreased Event
       const eventFilterOwner=dowgoERC20.filters.EthSupplyIncreased(owner.address)
       let events=await dowgoERC20.queryFilter(eventFilterOwner)
-      expect(events[0]&&events[0].args[1]&&events[0].args[1]).to.equal(ONE_UNIT);
+      expect(events[1]&&events[1].args[1]&&events[1].args[1]).to.equal(ONE_UNIT);
     });
     it("Should not let non-admin address increase eth reserve", async function () {
       try {
@@ -128,6 +132,9 @@ describe("DowgoERC20", function () {
     });
   });
   describe("DowgoERC20 - decreaseEthReserve", function () {
+    // increase eth reserve before
+    beforeEach(async()=>{
+    })
     it("Should let admin address decrease eth reserve", async function () {
       const decreaseTx = await dowgoERC20.connect(owner).decrease_eth_supply(ONE_UNIT);
 
@@ -141,6 +148,19 @@ describe("DowgoERC20", function () {
       const eventFilterOwner=dowgoERC20.filters.EthSupplyDecreased(owner.address)
       let events=await dowgoERC20.queryFilter(eventFilterOwner)
       expect(events[0]&&events[0].args[1]&&events[0].args[1]).to.equal(ONE_UNIT);
+      expect(await dowgoERC20.ethUserBalances(owner.address)).to.equal(ONE_UNIT);
+
+      // withdraw
+      const withdrawTx = await dowgoERC20.connect(owner).withdraw_eth(ONE_UNIT);
+      await withdrawTx.wait();
+
+      // check for WithdrawEth Event
+      const eventFilter2=dowgoERC20.filters.WithdrawEth(owner.address)
+      let events2=await dowgoERC20.queryFilter(eventFilter2)
+      expect(events2[0]&&events2[0].args[1]&&events2[0].args[1]).to.equal(ONE_UNIT);
+
+      // check pending eth balance
+      expect(await dowgoERC20.ethUserBalances(owner.address)).to.equal(0);
     });
     it("Should not let non-admin address decrease eth reserve", async function () {
       try {

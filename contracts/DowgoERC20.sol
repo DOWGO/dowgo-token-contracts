@@ -63,14 +63,12 @@ contract DowgoERC20 is ERC20, AccessControl {
   event EthSupplyDecreased(address indexed user, uint256 amount);
 
   constructor(
-    uint256 _initialEthSupply,
     uint256 _initialPrice,
     uint256 _minRatio
   ) ERC20("Dowgo", "DWG") {
     currentPrice = _initialPrice;
     minRatio = _minRatio;
     _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-    totalEthSupply=_initialEthSupply;
   }
 
   // Grant a user the role of admin //TODO: remove admin?
