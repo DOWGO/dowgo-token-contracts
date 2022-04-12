@@ -63,14 +63,14 @@ contract DowgoERC20 is ERC20, AccessControl {
   event EthSupplyDecreased(address indexed user, uint256 amount);
 
   constructor(
-    uint256 initialSupply,
+    uint256 _initialEthSupply,
     uint256 _initialPrice,
     uint256 _minRatio
   ) ERC20("Dowgo", "DWG") {
     currentPrice = _initialPrice;
     minRatio = _minRatio;
     _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-    _mint(msg.sender, initialSupply);
+    totalEthSupply=_initialEthSupply;
   }
 
   // Grant a user the role of admin //TODO: remove admin?
@@ -130,17 +130,18 @@ contract DowgoERC20 is ERC20, AccessControl {
   }
 
   // Increase Eth reserve of the contract
-  function decrease_eth_supply() external payable onlyRole(DEFAULT_ADMIN_ROLE) {
+  function decrease_eth_supply(uint256 ethAmount) external payable onlyRole(DEFAULT_ADMIN_ROLE) {
     // Check that this action won't let the collateral drop under the minimum ratio
     require(
-      msg.value <=
+      totalEthSupply.sub(ethAmount) >=
         totalSupply().mul(currentPrice).div(10**18).mul(minRatio).div(10**4),
       "Cannot go under min ratio for eth reserves"
     );
 
     // Remove Eth from the total reserve
-    totalEthSupply = totalEthSupply.sub(msg.value); // TODO check balance dif?
-    
-    emit EthSupplyDecreased(msg.sender,msg.value);
+    totalEthSupply = totalEthSupply.sub(ethAmount); // TODO check balance dif?
+    ethUserBalances[msg.sender] = ethUserBalances[msg.sender].add(ethAmount);
+
+    emit EthSupplyDecreased(msg.sender,ethAmount);
   }
 }
