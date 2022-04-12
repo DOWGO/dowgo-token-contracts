@@ -53,14 +53,14 @@ contract DowgoERC20 is ERC20, AccessControl {
    *
    * Note that `value` may be zero.
    */
-  event EthSupplyIncreased(uint256 amount);
+  event EthSupplyIncreased(address indexed user, uint256 amount);
 
   /**
    * @dev Emitted when a user withdraws their eth balance from the contract
    *
    * Note that `value` may be zero.
    */
-  event EthSupplyDecreased(uint256 amount);
+  event EthSupplyDecreased(address indexed user, uint256 amount);
 
   constructor(
     uint256 initialSupply,
@@ -126,7 +126,7 @@ contract DowgoERC20 is ERC20, AccessControl {
   function increase_eth_supply() external payable onlyRole(DEFAULT_ADMIN_ROLE) {
     // Add Eth to the total reserve
     totalEthSupply = totalEthSupply.add(msg.value); // TODO check balance dif?
-    emit EthSupplyIncreased(msg.value);
+    emit EthSupplyIncreased(msg.sender,msg.value);
   }
 
   // Increase Eth reserve of the contract
@@ -140,6 +140,7 @@ contract DowgoERC20 is ERC20, AccessControl {
 
     // Remove Eth from the total reserve
     totalEthSupply = totalEthSupply.sub(msg.value); // TODO check balance dif?
-    emit EthSupplyDecreased(msg.value);
+    
+    emit EthSupplyDecreased(msg.sender,msg.value);
   }
 }

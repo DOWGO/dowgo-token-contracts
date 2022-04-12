@@ -14,6 +14,7 @@ describe("DowgoERC20", function () {
   let dowgoERC20:DowgoERC20
   let owner:SignerWithAddress
   let addr1:SignerWithAddress
+  let addr2:SignerWithAddress
 
   beforeEach(async()=>{
     // reset network
@@ -21,9 +22,8 @@ describe("DowgoERC20", function () {
       method: "hardhat_reset",
       params: [],
     });
-    console.log('restarted');
     // get addresses
-    ([owner, addr1] = await ethers.getSigners());
+    ([owner, addr1, addr2] = await ethers.getSigners());
     // deploy contract
     const DowgoERC20Factory:DowgoERC20__factory = await ethers.getContractFactory("DowgoERC20");
     dowgoERC20 = await DowgoERC20Factory.deploy(initialEthReserve,initialPrice,initRatio);
@@ -51,8 +51,9 @@ describe("DowgoERC20", function () {
       expect(await dowgoERC20.balanceOf(addr1.address)).to.equal(ONE_UNIT);
 
       // check for Buy Event
-      const event=dowgoERC20.filters.BuyDowgo(addr1.address)
-      expect(event.topics&&event.topics[0]&&event.topics[0]===addr1.address)
+      const eventFilter2=dowgoERC20.filters.BuyDowgo(addr1.address)
+      let events2=await dowgoERC20.queryFilter(eventFilter2)
+      expect(events2[0]&&events2[0].args[1]&&events2[0].args[1]).to.equal(ONE_UNIT);
     });
   });
   describe("DowgoERC20 - sell", function () {
@@ -71,8 +72,9 @@ describe("DowgoERC20", function () {
       await sellTx.wait();
 
       // check for Sell Event
-      const event=dowgoERC20.filters.SellDowgo(addr1.address)
-      expect(event.topics&&event.topics[0]&&event.topics[0]===addr1.address)
+      const eventFilter=dowgoERC20.filters.SellDowgo(addr1.address)
+      let events=await dowgoERC20.queryFilter(eventFilter)
+      expect(events[0]&&events[0].args[1]&&events[0].args[1]).to.equal(ONE_UNIT);
 
       // check pending eth balance
       expect(await dowgoERC20.ethUserBalances(addr1.address)).to.equal(initialPrice);
@@ -82,8 +84,9 @@ describe("DowgoERC20", function () {
       await withdrawTx.wait();
 
       // check for WithdrawEth Event
-      const withdrawEvent=dowgoERC20.filters.WithdrawEth(addr1.address)
-      expect(withdrawEvent.topics&&withdrawEvent.topics[0]&&withdrawEvent.topics[0]===addr1.address)
+      const eventFilter2=dowgoERC20.filters.WithdrawEth(addr1.address)
+      let events2=await dowgoERC20.queryFilter(eventFilter2)
+      expect(events2[0]&&events2[0].args[1]&&events2[0].args[1]).to.equal(initialPrice);
 
       // check pending eth balance 276825861887155
       expect(await dowgoERC20.ethUserBalances(addr1.address)).to.equal(0);
@@ -101,9 +104,9 @@ describe("DowgoERC20", function () {
       expect(await dowgoERC20.totalEthSupply()).to.equal(ONE_UNIT);
 
       // check for EthSupplyIncreased Event
-      const event=dowgoERC20.filters.EthSupplyIncreased()
-      console.log("ev",event)
-      expect(event.topics&&event.topics[0]&&event.topics[0]===addr1.address)
+      const eventFilterOwner=dowgoERC20.filters.EthSupplyIncreased(owner.address)
+      let events=await dowgoERC20.queryFilter(eventFilterOwner)
+      expect(events[0]&&events[0].args[1]&&events[0].args[1]).to.equal(ONE_UNIT);
     });
     it("Should not let non-admin address increase eth reserve", async function () {
       try {
@@ -114,14 +117,14 @@ describe("DowgoERC20", function () {
       } catch(e:any){
         expect(e.toString()).to.equal(`Error: VM Exception while processing transaction: reverted with reason string 'AccessControl: account ${addr1.address.toLowerCase()} is missing role 0x0000000000000000000000000000000000000000000000000000000000000000'`)
       }
-
+      
       // Check that reserve has NOT been increased
       expect(await dowgoERC20.totalEthSupply()).to.equal(BigNumber.from(0));
 
-      // check for EthSupplyIncreased Event
-      const event=dowgoERC20.filters.EthSupplyIncreased()
-      console.log("ev",event)
-      expect(event.topics&&event.topics[0]&&event.topics[0]===addr1.address)
+      // check for EthSupplyIncreased Event not fired
+      const eventFilter=dowgoERC20.filters.EthSupplyIncreased(addr1.address)
+      let events=await dowgoERC20.queryFilter(eventFilter)
+      expect(events.length===0).to.be.true
     });
   });
 });
