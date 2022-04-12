@@ -27,6 +27,7 @@ contract DowgoERC20 is ERC20, AccessControl {
 
   // Events
 
+//TODO: event descriptions
   /**
    * @dev Emitted when a user buys dowgo tokens from the contract
    *
@@ -61,6 +62,11 @@ contract DowgoERC20 is ERC20, AccessControl {
    * Note that `value` may be zero.
    */
   event EthSupplyDecreased(address indexed user, uint256 amount);
+
+  /**
+   * @dev Emitted when a user withdraws their eth balance from the contract
+   */
+  event PriceSet(address indexed user, uint256 amount);
 
   constructor(
     uint256 _initialPrice,
@@ -128,7 +134,7 @@ contract DowgoERC20 is ERC20, AccessControl {
   }
 
   // Increase Eth reserve of the contract
-  function decrease_eth_supply(uint256 ethAmount) external payable onlyRole(DEFAULT_ADMIN_ROLE) {
+  function decrease_eth_supply(uint256 ethAmount) external onlyRole(DEFAULT_ADMIN_ROLE) {
     // Check that this action won't let the collateral drop under the minimum ratio
     require(
       totalEthSupply.sub(ethAmount) >=
@@ -141,5 +147,13 @@ contract DowgoERC20 is ERC20, AccessControl {
     ethUserBalances[msg.sender] = ethUserBalances[msg.sender].add(ethAmount);
 
     emit EthSupplyDecreased(msg.sender,ethAmount);
+  }
+
+  // Set Price
+  function set_current_price(uint256 newPrice) external onlyRole(DEFAULT_ADMIN_ROLE) {
+      require(newPrice>0,"Price must be >0");
+    
+    currentPrice=newPrice;
+    emit PriceSet(msg.sender,newPrice);
   }
 }

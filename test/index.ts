@@ -205,4 +205,57 @@ describe("DowgoERC20", function () {
       expect(events.length===0).to.be.true
     });
   });
+  describe("DowgoERC20 - set price", function () {
+    const newPrice=ONE_UNIT.mul(3)
+    it("Should let admin set price", async function () {
+      const setPriceTx = await dowgoERC20.connect(owner).set_current_price(newPrice);
+
+      // wait until the transaction is mined
+      await setPriceTx.wait();
+
+      // Check that price has been set
+      expect(await dowgoERC20.currentPrice()).to.equal(newPrice);
+
+      // check for PriceSet Event
+      const eventFilterOwner=dowgoERC20.filters.PriceSet(owner.address)
+      let events=await dowgoERC20.queryFilter(eventFilterOwner)
+      expect(events[0]&&events[0].args[1]&&events[0].args[1]).to.equal(newPrice);
+    });
+    it("Should not let non-admin address set price", async function () {
+      try {
+        const setPriceTx = await dowgoERC20.connect(addr1).set_current_price(newPrice);
+  
+        // wait until the transaction is mined
+        await setPriceTx.wait();
+      } catch(e:any){
+        expect(e.toString()).to.equal(`Error: VM Exception while processing transaction: reverted with reason string 'AccessControl: account 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 is missing role 0x0000000000000000000000000000000000000000000000000000000000000000'`)
+      }
+      
+      // Check that price has NOT been set
+      expect(await dowgoERC20.totalEthSupply()).to.equal(initialEthReserve);
+
+      // check for PriceSet Event not fired
+      const eventFilter=dowgoERC20.filters.PriceSet(addr1.address)
+      let events=await dowgoERC20.queryFilter(eventFilter)
+      expect(events.length===0).to.be.true
+    });
+    it("Should not let admin address set price to zero", async function () {
+      try {
+        const setPriceTx = await dowgoERC20.connect(owner).set_current_price(BigNumber.from(0));
+  
+        // wait until the transaction is mined
+        await setPriceTx.wait();
+      } catch(e:any){
+        expect(e.toString()).to.equal(`Error: VM Exception while processing transaction: reverted with reason string 'Price must be >0'`)
+      }
+      
+      // Check that price has NOT been set
+      expect(await dowgoERC20.totalEthSupply()).to.equal(initialEthReserve);
+
+      // check for PriceSet Event not fired
+      const eventFilter=dowgoERC20.filters.PriceSet(addr1.address)
+      let events=await dowgoERC20.queryFilter(eventFilter)
+      expect(events.length===0).to.be.true
+    });
+  });
 });
