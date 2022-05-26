@@ -10,7 +10,7 @@ const initialEthBalance=BigNumber.from(10000).mul(ONE_UNIT)
 const initialPrice=ONE_UNIT.mul(2)// start price is 2ETH/DWG
 const initRatio=BigNumber.from(300) // out of 10k
 
-describe("DowgoERC20 - buy", function () {
+describe("DowgoERC20 - sell", function () {
   let dowgoERC20:DowgoERC20
   let owner:SignerWithAddress
   let addr1:SignerWithAddress
@@ -33,17 +33,40 @@ describe("DowgoERC20 - buy", function () {
     const increaseTx = await dowgoERC20.connect(owner).increase_eth_supply({value:initialEthReserve});
     await increaseTx.wait();
   })
-    it("Should let first address buy dowgo token against eth", async function () {
+
+
+    // buy tokens before selling them
+    beforeEach(async()=>{
+      // buy
       const buyTx = await dowgoERC20.connect(addr1).buy_dowgo(ONE_UNIT,{value:initialPrice});
 
       // wait until the transaction is mined
       await buyTx.wait();
+    })
+    it("Should let first address sell dowgo token against eth", async function () {
+      // sell
+      const sellTx = await dowgoERC20.connect(addr1).sell_dowgo(ONE_UNIT);
+      await sellTx.wait();
 
-      expect(await dowgoERC20.balanceOf(addr1.address)).to.equal(ONE_UNIT);
+      // check for Sell Event
+      const eventFilter=dowgoERC20.filters.SellDowgo(addr1.address)
+      let events=await dowgoERC20.queryFilter(eventFilter)
+      expect(events[0]&&events[0].args[1]&&events[0].args[1]).to.equal(ONE_UNIT);
 
-      // check for Buy Event
-      const eventFilter2=dowgoERC20.filters.BuyDowgo(addr1.address)
+      // check pending eth balance
+      expect(await dowgoERC20.ethUserBalances(addr1.address)).to.equal(initialPrice);
+
+      // withdraw
+      const withdrawTx = await dowgoERC20.connect(addr1).withdraw_eth(initialPrice);
+      await withdrawTx.wait();
+
+      // check for WithdrawEth Event
+      const eventFilter2=dowgoERC20.filters.WithdrawEth(addr1.address)
       let events2=await dowgoERC20.queryFilter(eventFilter2)
-      expect(events2[0]&&events2[0].args[1]&&events2[0].args[1]).to.equal(ONE_UNIT);
+      expect(events2[0]&&events2[0].args[1]&&events2[0].args[1]).to.equal(initialPrice);
+
+      // check pending eth balance
+      expect(await dowgoERC20.ethUserBalances(addr1.address)).to.equal(0);
+      expect((initialEthBalance).sub((await addr1.getBalance())).lt(ONE_UNIT)).to.equal(true);
     });
 });

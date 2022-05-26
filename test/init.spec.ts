@@ -10,7 +10,7 @@ const initialEthBalance=BigNumber.from(10000).mul(ONE_UNIT)
 const initialPrice=ONE_UNIT.mul(2)// start price is 2ETH/DWG
 const initRatio=BigNumber.from(300) // out of 10k
 
-describe("DowgoERC20 - buy", function () {
+describe("DowgoERC20 - init", function () {
   let dowgoERC20:DowgoERC20
   let owner:SignerWithAddress
   let addr1:SignerWithAddress
@@ -33,17 +33,14 @@ describe("DowgoERC20 - buy", function () {
     const increaseTx = await dowgoERC20.connect(owner).increase_eth_supply({value:initialEthReserve});
     await increaseTx.wait();
   })
-    it("Should let first address buy dowgo token against eth", async function () {
-      const buyTx = await dowgoERC20.connect(addr1).buy_dowgo(ONE_UNIT,{value:initialPrice});
+    it("Should check that deployement was successful with right initial amount", async function () {
 
-      // wait until the transaction is mined
-      await buyTx.wait();
-
-      expect(await dowgoERC20.balanceOf(addr1.address)).to.equal(ONE_UNIT);
-
-      // check for Buy Event
-      const eventFilter2=dowgoERC20.filters.BuyDowgo(addr1.address)
-      let events2=await dowgoERC20.queryFilter(eventFilter2)
-      expect(events2[0]&&events2[0].args[1]&&events2[0].args[1]).to.equal(ONE_UNIT);
+      expect(await dowgoERC20.totalSupply()).to.equal(BigNumber.from(0));;
+      expect(await dowgoERC20.totalEthSupply()).to.equal(initialEthReserve);
+      expect(await dowgoERC20.currentPrice()).to.equal(initialPrice);;
+      expect(await dowgoERC20.minRatio()).to.equal(initRatio);;
+    });
+    it("Should check that first address has ether", async function () {
+      expect(await addr1.getBalance()).to.equal(initialEthBalance)
     });
 });
