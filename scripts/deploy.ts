@@ -7,6 +7,7 @@ import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 const initialAmount=BigNumber.from(1000)
 
+// TODO write this with actual USDC address
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
   // line interface.
@@ -16,12 +17,12 @@ async function main() {
   // await hre.run('compile');
 
   // We get the contract to deploy
-  const DowgoERC20 = await ethers.getContractFactory("DowgoERC20");
-  const dowgoERC20 = await DowgoERC20.deploy(BigNumber.from(1000),BigNumber.from(300));
+  // const DowgoERC20 = await ethers.getContractFactory("DowgoERC20");
+  // const dowgoERC20 = await DowgoERC20.deploy(BigNumber.from(1000),BigNumber.from(300),mockUSDCSupply);
 
-  await dowgoERC20.deployed();
+  // await dowgoERC20.deployed();
 
-  console.log("DowgoERC20 deployed to:", dowgoERC20.address);
+  //console.log("DowgoERC20 deployed to:", dowgoERC20.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

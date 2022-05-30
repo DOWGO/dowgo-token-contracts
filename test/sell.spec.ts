@@ -2,48 +2,28 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers, network } from "hardhat";
-import { DowgoERC20, DowgoERC20__factory } from "../typechain";
+import { DowgoERC20, DowgoERC20__factory, ERC20 } from "../typechain";
+import { initialPrice, initialUser1USDCBalance, ONE_UNIT } from "./test-constants";
+import { approveTransfer, setupTestEnv } from "./test-utils";
 
-const ONE_UNIT=BigNumber.from((10**18).toString())
-const initialEthReserve=BigNumber.from(1000).mul(ONE_UNIT)
-const initialEthBalance=BigNumber.from(10000).mul(ONE_UNIT)
-const initialPrice=ONE_UNIT.mul(2)// start price is 2ETH/DWG
-const initRatio=BigNumber.from(300) // out of 10k
 
 describe("DowgoERC20 - sell", function () {
   let dowgoERC20:DowgoERC20
-  let owner:SignerWithAddress
+  let usdcERC20:ERC20
   let addr1:SignerWithAddress
-  let addr2:SignerWithAddress
-
-  beforeEach(async()=>{
-    // reset network
-    await network.provider.request({
-      method: "hardhat_reset",
-      params: [],
-    });
-    // get addresses
-    ([owner, addr1, addr2] = await ethers.getSigners());
-    // deploy contract
-    const DowgoERC20Factory:DowgoERC20__factory = await ethers.getContractFactory("DowgoERC20");
-    dowgoERC20 = await DowgoERC20Factory.deploy(initialPrice,initRatio);
-    await dowgoERC20.deployed();
-
-    // increase total reserve
-    const increaseTx = await dowgoERC20.connect(owner).increase_eth_supply({value:initialEthReserve});
-    await increaseTx.wait();
-  })
-
 
     // buy tokens before selling them
     beforeEach(async()=>{
+      ({dowgoERC20,addr1,usdcERC20}=await setupTestEnv())
+      // Approve erc20 transfer
+      await approveTransfer(usdcERC20,addr1,dowgoERC20.address,ONE_UNIT.mul(2))
       // buy
-      const buyTx = await dowgoERC20.connect(addr1).buy_dowgo(ONE_UNIT,{value:initialPrice});
+      const buyTx = await dowgoERC20.connect(addr1).buy_dowgo(ONE_UNIT);
 
       // wait until the transaction is mined
       await buyTx.wait();
     })
-    it("Should let first address sell dowgo token against eth", async function () {
+    it("Should let first address sell dowgo token against usdc", async function () {
       // sell
       const sellTx = await dowgoERC20.connect(addr1).sell_dowgo(ONE_UNIT);
       await sellTx.wait();
@@ -54,19 +34,27 @@ describe("DowgoERC20 - sell", function () {
       expect(events[0]&&events[0].args[1]&&events[0].args[1]).to.equal(ONE_UNIT);
 
       // check pending eth balance
-      expect(await dowgoERC20.ethUserBalances(addr1.address)).to.equal(initialPrice);
-
+      expect(await dowgoERC20.usdcUserBalances(addr1.address)).to.equal(initialPrice);
+      console.log("sold")
+  //     const approveTx = await dowgoERC20.connect(addr1).approve_user(initialPrice.mul(2))
+  // await approveTx.wait();
+  // console.log(await usdcERC20.allowance(addr1.address,dowgoERC20.address))
+  // console.log(await usdcERC20.allowance(dowgoERC20.address,addr1.address),initialPrice)
       // withdraw
-      const withdrawTx = await dowgoERC20.connect(addr1).withdraw_eth(initialPrice);
+      const withdrawTx = await dowgoERC20.connect(addr1).withdraw_usdc(initialPrice);
       await withdrawTx.wait();
-
-      // check for WithdrawEth Event
-      const eventFilter2=dowgoERC20.filters.WithdrawEth(addr1.address)
+      console.log("withdrawn")
+      // check for WithdrawUSDC Event
+      const eventFilter2=dowgoERC20.filters.WithdrawUSDC(addr1.address)
       let events2=await dowgoERC20.queryFilter(eventFilter2)
       expect(events2[0]&&events2[0].args[1]&&events2[0].args[1]).to.equal(initialPrice);
+      console.log("withdrawn")
 
-      // check pending eth balance
-      expect(await dowgoERC20.ethUserBalances(addr1.address)).to.equal(0);
-      expect((initialEthBalance).sub((await addr1.getBalance())).lt(ONE_UNIT)).to.equal(true);
+      // check pending usdc balance
+      expect(await dowgoERC20.usdcUserBalances(addr1.address)).to.equal(BigNumber.from(0));
+      console.log("withdrawn")
+
+      // check that user 1 is back to owning 100 USDC
+      expect(await usdcERC20.balanceOf(addr1.address)).to.equal(initialUser1USDCBalance);
     });
 });

@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import "hardhat/console.sol"; //TODO: get rid of this in prod
@@ -11,18 +12,21 @@ import "hardhat/console.sol"; //TODO: get rid of this in prod
 contract DowgoERC20 is ERC20, AccessControl {
   using SafeMath for uint256;
 
-  // + Ethereum +
+  // + USDC +
+
+  // USDC token instance
+  IERC20 usdcToken;
 
   /// Total supply of Ethereum in the contract
-  uint256 public totalEthSupply;
+  uint256 public totalUSDCSupply;
 
   // Eth Balances of all token owners
-  mapping(address => uint256) public ethUserBalances;
+  mapping(address => uint256) public usdcUserBalances;
 
-  // Price in wei/Dowgo
+  // Price in USDC-wei/Dowgo
   uint256 public currentPrice; //TODO: reduce int range?
 
-  // Min collateral ratio out of 10000
+  // Min collateral ratio out of total AUM. Should be 3%
   uint256 public minRatio; //TODO: reduce int range?
 
   // Events
@@ -33,42 +37,55 @@ contract DowgoERC20 is ERC20, AccessControl {
    *
    * Note that `value` may be zero.
    */
-  event BuyDowgo(address indexed buyer, uint256 amount);
+  event BuyDowgo(
+    address indexed buyer,
+    uint256 dowgoAmount,
+    uint256 usdcAmount
+  );
 
   /**
    * @dev Emitted when a user sells dowgo tokens back to the contract
    *
    * Note that `value` may be zero.
    */
-  event SellDowgo(address indexed seller, uint256 amount);
+  event SellDowgo(
+    address indexed seller,
+    uint256 dowgoAmount,
+    uint256 usdcAmount
+  );
 
   /**
    * @dev Emitted when a user withdraws their eth balance from the contract
    *
    * Note that `value` may be zero.
    */
-  event WithdrawEth(address indexed user, uint256 amount);
+  event WithdrawUSDC(address indexed user, uint256 amount);
 
   /**
    * @dev Emitted when a user withdraws their eth balance from the contract
    *
    * Note that `value` may be zero.
    */
-  event EthSupplyIncreased(address indexed user, uint256 amount);
+  event USDCSupplyIncreased(address indexed user, uint256 amount);
 
   /**
    * @dev Emitted when a user withdraws their eth balance from the contract
    *
    * Note that `value` may be zero.
    */
-  event EthSupplyDecreased(address indexed user, uint256 amount);
+  event USDCSupplyDecreased(address indexed user, uint256 amount);
 
   /**
    * @dev Emitted when a user withdraws their eth balance from the contract
    */
   event PriceSet(address indexed user, uint256 amount);
 
-  constructor(uint256 _initialPrice, uint256 _minRatio) ERC20("Dowgo", "DWG") {
+  constructor(
+    uint256 _initialPrice,
+    uint256 _minRatio,
+    address usdcTokenAddress
+  ) ERC20("Dowgo", "DWG") {
+    usdcToken = IERC20(usdcTokenAddress);
     currentPrice = _initialPrice;
     minRatio = _minRatio;
     _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -79,79 +96,114 @@ contract DowgoERC20 is ERC20, AccessControl {
     grantRole(DEFAULT_ADMIN_ROLE, newAdmin);
   }
 
-  // Buy Dowgo tokens by sending enough ETH // TODO: allow zero tsf?
-  function buy_dowgo(uint256 dowgoAmount) external payable {
-    // Check that the user sent enough ETH
-    require(msg.value >= dowgoAmount.mul(currentPrice).div(10**18));
-
-    // Add Eth to the total reserve
-    totalEthSupply = totalEthSupply.add(msg.value); // TODO check balance dif?
-
-    //interactions
-    _mint(msg.sender, dowgoAmount); // TODO check result?
-    emit BuyDowgo(msg.sender, dowgoAmount);
+  // User must approve USDC transfers to this Smart Contract before they can use it as payment //TODO: obsolete because function can be called directly
+  function approve_usdc_for_dowgo(uint256 _tokenamount) public returns (bool) {
+    usdcToken.approve(address(this), _tokenamount);
+    return true;
   }
 
-  // Sell Dowgo tokens against ETH
+  // Get user USDC Allowance to use this contract
+  function get_usdc_allowance() public view returns (uint256) {
+    return usdcToken.allowance(msg.sender, address(this));
+  }
+
+  // Buy Dowgo tokens by sending enough ETH // TODO: allow zero tsf? Put usdc amoutn in input?
+  function buy_dowgo(uint256 dowgoAmount) public returns (bool) {
+    uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18);
+    // Check that the user has enough USDC allowance on the contract
+    require(
+      usdcAmount >= get_usdc_allowance(),
+      "Please approve tokens before transferring"
+    );
+
+    // Add Eth to the total reserve
+    totalUSDCSupply = totalUSDCSupply.add(usdcAmount); // TODO check balance dif?
+
+    // Interactions
+    // Send USDC to this contract
+    usdcToken.transferFrom(msg.sender,address(this), usdcAmount);
+    // Mint new dowgo tokens
+    _mint(msg.sender, dowgoAmount); // TODO check result?
+    emit BuyDowgo(msg.sender, dowgoAmount, usdcAmount);
+    return true;
+  }
+
+  // Sell Dowgo tokens against ETH // TODO check non-zero
   function sell_dowgo(uint256 dowgoAmount) external {
-    uint256 ethAmount = dowgoAmount.mul(currentPrice).div(10**18);
+    uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18);
     // Check that the user owns enough tokens
     require(balanceOf(msg.sender) >= dowgoAmount);
-    //this should never happen, hence the asset
-    assert(totalEthSupply >= ethAmount);
+    //this should never happen, hence the assert
+    assert(totalUSDCSupply >= usdcAmount);
 
     // Transfer Eth from the reserve to the user eth balance
-    totalEthSupply = totalEthSupply.sub(ethAmount);
-    ethUserBalances[msg.sender] = ethUserBalances[msg.sender].add(ethAmount);
+    totalUSDCSupply = totalUSDCSupply.sub(usdcAmount);
+    usdcUserBalances[msg.sender] = usdcUserBalances[msg.sender].add(usdcAmount);
 
     //interactions
     _burn(msg.sender, dowgoAmount); // TODO check result?
-    emit SellDowgo(msg.sender, dowgoAmount);
+    emit SellDowgo(msg.sender, dowgoAmount, usdcAmount);
+  }
+
+// TODO : remove, doesnt seem necessary
+  function approve_user(uint256 amount) public {
+    usdcToken.approve(msg.sender,amount);
   }
 
   // Cash out available eth balance for a user
-  function withdraw_eth(uint256 ethAmount) external payable {
+  function withdraw_usdc(uint256 usdcAmount) public {
     // Check that the user owns enough eth on the smart contract
-    require(ethAmount <= ethUserBalances[msg.sender]);
+    require(usdcAmount <= usdcUserBalances[msg.sender]);
 
     // Substract User balance
-    ethUserBalances[msg.sender] = ethUserBalances[msg.sender].sub(ethAmount);
+    usdcUserBalances[msg.sender] = usdcUserBalances[msg.sender].sub(usdcAmount);
 
-    //interactions
-    (bool sent, ) = msg.sender.call{value: ethAmount}("");
-    require(sent, "Failed to cash out Ether ");
-    emit WithdrawEth(msg.sender, ethAmount);
+    //interactions //TODO: check return value?
+    // console.log(usdcToken.allowance(address(this), msg.sender));
+    // console.log(usdcAmount);
+    // require(usdcToken.allowance(address(this), msg.sender)>=usdcAmount,"Call approve_user function");
+    usdcToken.transfer( msg.sender, usdcAmount);
+    emit WithdrawUSDC(msg.sender, usdcAmount);
   }
 
-  // Increase Eth reserve of the contract
-  function increase_eth_supply() external payable onlyRole(DEFAULT_ADMIN_ROLE) {
+  // Increase USDC reserve of the contract
+  function increase_usdc_supply(uint256 usdcAmount)
+    public
+    onlyRole(DEFAULT_ADMIN_ROLE)
+  {
+    // Effect
     // Add Eth to the total reserve
-    totalEthSupply = totalEthSupply.add(msg.value); // TODO check balance dif?
-    emit EthSupplyIncreased(msg.sender, msg.value);
+    totalUSDCSupply = totalUSDCSupply.add(usdcAmount); // TODO check balance dif?
+
+    //Interation
+    // Send USDC to this contract
+    usdcToken.transferFrom(msg.sender, address(this), usdcAmount);
+
+    emit USDCSupplyIncreased(msg.sender, usdcAmount);
   }
 
-  // Increase Eth reserve of the contract
-  function decrease_eth_supply(uint256 ethAmount)
-    external
+  // Increase USDC reserve of the contract
+  function decrease_usdc_supply(uint256 usdcAmount)
+    public
     onlyRole(DEFAULT_ADMIN_ROLE)
   {
     // Check that this action won't let the collateral drop under the minimum ratio
     require(
-      totalEthSupply.sub(ethAmount) >=
+      totalUSDCSupply.sub(usdcAmount) >=
         totalSupply().mul(currentPrice).div(10**18).mul(minRatio).div(10**4),
       "Cannot go under min ratio for eth reserves"
     );
 
     // Remove Eth from the total reserve
-    totalEthSupply = totalEthSupply.sub(ethAmount); // TODO check balance dif?
-    ethUserBalances[msg.sender] = ethUserBalances[msg.sender].add(ethAmount);
+    totalUSDCSupply = totalUSDCSupply.sub(usdcAmount); // TODO check balance dif?
+    usdcUserBalances[msg.sender] = usdcUserBalances[msg.sender].add(usdcAmount);
 
-    emit EthSupplyDecreased(msg.sender, ethAmount);
+    emit USDCSupplyDecreased(msg.sender, usdcAmount);
   }
 
   // Set Price
   function set_current_price(uint256 newPrice)
-    external
+    public
     onlyRole(DEFAULT_ADMIN_ROLE)
   {
     require(newPrice > 0, "Price must be >0");
