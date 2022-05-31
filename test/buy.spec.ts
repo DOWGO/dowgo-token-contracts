@@ -73,7 +73,7 @@ describe("DowgoERC20 - buy", function () {
         await approveTransfer(usdcERC20,addr1,dowgoERC20.address,BUY_AMOUNT_TOO_HIGH.mul(initPriceInteger))
         
         // Create buy tx
-        const buyTx = await dowgoERC20.connect(addr2).buy_dowgo(BUY_AMOUNT_TOO_HIGH);
+        const buyTx = await dowgoERC20.connect(addr1).buy_dowgo(BUY_AMOUNT_TOO_HIGH);
   
         // wait until the transaction is mined
         await buyTx.wait();
@@ -81,10 +81,11 @@ describe("DowgoERC20 - buy", function () {
         expect(e.toString()).to.equal(`Error: VM Exception while processing transaction: reverted with reason string 'Contract already sold all dowgo tokens before next rebalancing'`)
       }
       
-      // Check that price has NOT been set
+      // Check that supply of both USDC and Dowgo hasnt been changed
       expect(await dowgoERC20.totalUSDCSupply()).to.equal(initialUSDCReserve);
+      expect(await dowgoERC20.totalSupply()).to.equal(initialDowgoSupply);
 
-      // check for PriceSet Event not fired
+      // check for BuyDowgo Event not fired
       const eventFilter=dowgoERC20.filters.BuyDowgo(addr1.address)
       let events=await dowgoERC20.queryFilter(eventFilter)
       expect(events.length===0).to.be.true

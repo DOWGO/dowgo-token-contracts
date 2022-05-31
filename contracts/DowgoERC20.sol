@@ -108,13 +108,16 @@ contract DowgoERC20 is ERC20, AccessControl {
 
   // Buy Dowgo tokens by sending enough USDC // TODO: allow zero tsf? Put usdc amoutn in input?
   function buy_dowgo(uint256 dowgoAmount) public returns (bool) {
+    // usdc amount for the desired dowgo amount
     uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18);
+
     // Check buying dowgo won't let the collateral ratio go above target+collRange
     uint256 targetUSDCCollateral=totalSupply().add(dowgoAmount).mul(currentPrice).div(10**18).mul(targetRatio).div(10**4);
     require(
       totalUSDCSupply.add(usdcAmount)<targetUSDCCollateral.mul(collRange).div(10**4).add(targetUSDCCollateral),
       "Contract already sold all dowgo tokens before next rebalancing"
     );
+
     // Check that the user has enough USDC allowance on the contract
     require(
       usdcAmount <= get_usdc_allowance(),
@@ -165,6 +168,12 @@ contract DowgoERC20 is ERC20, AccessControl {
     uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18);
     // Check that the user owns enough tokens
     require(balanceOf(msg.sender) >= dowgoAmount);
+    // Check selling dowgo won't let the collateral ratio go under target minus collRange
+    uint256 targetUSDCCollateral=totalSupply().sub(dowgoAmount).mul(currentPrice).div(10**18).mul(targetRatio).div(10**4);
+    require(
+      totalUSDCSupply.sub(usdcAmount)>targetUSDCCollateral.sub(targetUSDCCollateral.mul(collRange).div(10**4)),
+      "Contract already bought all dowgo tokens before next rebalancing"
+    );
     //this should never happen, hence the assert
     assert(totalUSDCSupply >= usdcAmount);
 
