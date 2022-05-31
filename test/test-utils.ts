@@ -1,7 +1,7 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers, network } from "hardhat";
-import { initialPrice, initialUSDCReserve, initialUser1USDCBalance, initRatio, mockUSDCSupply, ONE_UNIT } from "./test-constants";
+import { collRange, initialDowgoSupply, initialPrice, initialUSDCReserve, initialUser1USDCBalance, initRatio, mockUSDCSupply, ONE_UNIT } from "./test-constants";
 
 
 import { DowgoERC20, DowgoERC20__factory, ERC20, ERC20PresetFixedSupply__factory } from "../typechain";
@@ -39,12 +39,12 @@ export const setupTestEnv=async ()=>{
       await sendToOwnerTx.wait();
       // deploy contract
       const DowgoERC20Factory:DowgoERC20__factory = await ethers.getContractFactory("DowgoERC20");
-      dowgoERC20 = await DowgoERC20Factory.connect(dowgoAdmin).deploy(initialPrice,initRatio, usdcERC20.address);
+      dowgoERC20 = await DowgoERC20Factory.connect(dowgoAdmin).deploy(initialPrice,initRatio, collRange, usdcERC20.address);
       await dowgoERC20.deployed();
   
-      // increase total reserve by 1000 USDC
-      await approveTransfer(usdcERC20,dowgoAdmin,dowgoERC20.address,initialUSDCReserve)
-      const increaseTx = await dowgoERC20.connect(dowgoAdmin).increase_usdc_supply(initialUSDCReserve);
+      // increase total reserve by 30 USDC, buys 1000 dowgo for the admin
+      await approveTransfer(usdcERC20,dowgoAdmin,dowgoERC20.address, initialUSDCReserve)
+      const increaseTx = await dowgoERC20.connect(dowgoAdmin).admin_buy_dowgo(initialDowgoSupply);
       await increaseTx.wait();
       return {dowgoERC20,dowgoAdmin,addr1,addr2,usdcERC20}
 }

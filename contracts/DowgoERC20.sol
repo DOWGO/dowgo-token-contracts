@@ -26,8 +26,11 @@ contract DowgoERC20 is ERC20, AccessControl {
   // Price in USDC-wei/Dowgo
   uint256 public currentPrice; //TODO: reduce int range?
 
-  // Min collateral ratio out of total AUM. Should be 3%
-  uint256 public minRatio; //TODO: reduce int range?
+  // Min collateral ratio out of total AUM. Should be 3%, is a number out of 10k (so 300 for 3%)
+  uint256 public targetRatio; //TODO: reduce int range?
+
+  // collateral range, the % (out of 10k) around which the ratio can vary
+  uint256 public collRange; //TODO: reduce int range?
 
   // Events
 
@@ -82,12 +85,14 @@ contract DowgoERC20 is ERC20, AccessControl {
 
   constructor(
     uint256 _initialPrice,
-    uint256 _minRatio,
+    uint256 _targetRatio,
+    uint256 _collRange,
     address usdcTokenAddress
   ) ERC20("Dowgo", "DWG") {
     usdcToken = IERC20(usdcTokenAddress);
     currentPrice = _initialPrice;
-    minRatio = _minRatio;
+    targetRatio = _targetRatio;
+    collRange = _collRange;
     _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
   }
 
@@ -96,27 +101,52 @@ contract DowgoERC20 is ERC20, AccessControl {
     grantRole(DEFAULT_ADMIN_ROLE, newAdmin);
   }
 
-  // User must approve USDC transfers to this Smart Contract before they can use it as payment //TODO: obsolete because function can be called directly
-  function approve_usdc_for_dowgo(uint256 _tokenamount) public returns (bool) {
-    usdcToken.approve(address(this), _tokenamount);
-    return true;
-  }
-
   // Get user USDC Allowance to use this contract
   function get_usdc_allowance() public view returns (uint256) {
     return usdcToken.allowance(msg.sender, address(this));
   }
 
-  // Buy Dowgo tokens by sending enough ETH // TODO: allow zero tsf? Put usdc amoutn in input?
+  // Buy Dowgo tokens by sending enough USDC // TODO: allow zero tsf? Put usdc amoutn in input?
   function buy_dowgo(uint256 dowgoAmount) public returns (bool) {
     uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18);
+    // Check buying dowgo won't let the collateral ratio go above target+collRange
+    uint256 targetUSDCCollateral=totalSupply().add(dowgoAmount).mul(currentPrice).div(10**18).mul(targetRatio).div(10**4);
+    require(
+      totalUSDCSupply.add(usdcAmount)<targetUSDCCollateral.mul(collRange).div(10**4).add(targetUSDCCollateral),
+      "Contract already sold all dowgo tokens before next rebalancing"
+    );
     // Check that the user has enough USDC allowance on the contract
     require(
-      usdcAmount >= get_usdc_allowance(),
+      usdcAmount <= get_usdc_allowance(),
       "Please approve tokens before transferring"
     );
 
-    // Add Eth to the total reserve
+    // Add USDC to the total reserve
+    totalUSDCSupply = totalUSDCSupply.add(usdcAmount); // TODO check balance dif?
+
+    // Interactions
+    // Send USDC to this contract
+    bool sent = usdcToken.transferFrom(msg.sender, address(this), usdcAmount);
+    require(sent, "Failed to transfer usdc from user to dowgo smart contract"); //TODO: test this with moch usdc
+
+    // Mint new dowgo tokens
+    _mint(msg.sender, dowgoAmount); // TODO check result?
+    emit BuyDowgo(msg.sender, dowgoAmount, usdcAmount);
+    return true;
+  }
+
+  // Let Admin buy Dowgo tokens without the collateral limit (because they will trigger the rebalancing)
+  // Only requires targetRatio= 3% of real price
+  // NB: this allows the admin to inflate the supply drastically, but so would setgin the price very low //TODO: think about hose attack vectors
+  function admin_buy_dowgo(uint256 dowgoAmount) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+    uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18).mul(targetRatio).div(10**4);
+    // Check that the user has enough USDC allowance on the contract
+    require(
+      usdcAmount <= get_usdc_allowance(),
+      "Please approve tokens before transferring"
+    );
+
+    // Add USDC to the total reserve
     totalUSDCSupply = totalUSDCSupply.add(usdcAmount); // TODO check balance dif?
 
     // Interactions
@@ -153,7 +183,7 @@ contract DowgoERC20 is ERC20, AccessControl {
     require(
       usdcAmount <= usdcUserBalances[msg.sender],
       "User doesn't have that much usdc credit"
-    ); //TODO test this
+    );
 
     uint256 totalUsdcBalance = usdcToken.balanceOf(address(this));
     assert(usdcAmount <= totalUsdcBalance); //this shuold never error
@@ -188,10 +218,11 @@ contract DowgoERC20 is ERC20, AccessControl {
     public
     onlyRole(DEFAULT_ADMIN_ROLE)
   {
-    // Check that this action won't let the collateral drop under the minimum ratio
+    // Check that this action won't let the collateral drop under target minus collRange
+    uint256 targetUSDCCollateral=totalSupply().mul(currentPrice).div(10**18).mul(targetRatio).div(10**4);
     require(
       totalUSDCSupply.sub(usdcAmount) >=
-        totalSupply().mul(currentPrice).div(10**18).mul(minRatio).div(10**4),
+        targetUSDCCollateral.sub(targetUSDCCollateral.mul(collRange).div(10**4)),
       "Cannot go under min ratio for eth reserves"
     );
 

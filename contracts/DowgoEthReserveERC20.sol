@@ -23,7 +23,7 @@ contract DowgoEthReserveERC20 is ERC20, AccessControl {
   uint256 public currentPrice; //TODO: reduce int range?
 
   // Min collateral ratio out of 10000
-  uint256 public minRatio; //TODO: reduce int range?
+  uint256 public targetRatio; //TODO: reduce int range?
 
   // Events
 
@@ -68,9 +68,9 @@ contract DowgoEthReserveERC20 is ERC20, AccessControl {
    */
   event PriceSet(address indexed user, uint256 amount);
 
-  constructor(uint256 _initialPrice, uint256 _minRatio) ERC20("Dowgo", "DWG") {
+  constructor(uint256 _initialPrice, uint256 _targetRatio) ERC20("Dowgo", "DWG") {
     currentPrice = _initialPrice;
-    minRatio = _minRatio;
+    targetRatio = _targetRatio;
     _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
   }
 
@@ -138,7 +138,7 @@ contract DowgoEthReserveERC20 is ERC20, AccessControl {
     // Check that this action won't let the collateral drop under the minimum ratio
     require(
       totalEthSupply.sub(ethAmount) >=
-        totalSupply().mul(currentPrice).div(10**18).mul(minRatio).div(10**4),
+        totalSupply().mul(currentPrice).div(10**18).mul(targetRatio).div(10**4),
       "Cannot go under min ratio for eth reserves"
     );
 
