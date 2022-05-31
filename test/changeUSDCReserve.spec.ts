@@ -2,6 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { DowgoERC20, DowgoERC20__factory, ERC20 } from "../typechain";
+import { initialUser1USDCBalance } from "./test-constants";
 import { approveTransfer, setupTestEnv } from "./test-utils";
 
 const ONE_UNIT=BigNumber.from((10**18).toString())
@@ -18,8 +19,8 @@ describe("DowgoERC20 - Eth Reserve", function () {
   beforeEach(async()=>{
     ({dowgoERC20,addr1,addr2,usdcERC20,dowgoAdmin}=await setupTestEnv())
   })
-  describe("DowgoERC20 - increaseEthReserve", function () {
-    it("Should let admin address increase eth reserve", async function () {
+  describe("DowgoERC20 - increase_usdc_supply", function () {
+    it("Should let admin address increase usdc reserve", async function () {
       await approveTransfer(usdcERC20,dowgoAdmin,dowgoERC20.address,ONE_UNIT)
       const increaseTx = await dowgoERC20.connect(dowgoAdmin).increase_usdc_supply(ONE_UNIT);
 
@@ -29,12 +30,18 @@ describe("DowgoERC20 - Eth Reserve", function () {
       // Check that reserve has been increased
       expect(await dowgoERC20.totalUSDCSupply()).to.equal(ONE_UNIT.add(initialUSDCReserve));
 
+      // Check that the dowgo sc owns usdc
+      expect(await usdcERC20.balanceOf(dowgoERC20.address)).to.equal(ONE_UNIT.add(initialUSDCReserve))
+
+      // Check that the admin sc was debited 1 usdc
+      expect(await usdcERC20.balanceOf(dowgoAdmin.address)).to.equal(initialUSDCReserve.sub(ONE_UNIT))
+
       // check for USDCSupplyIncreased Event
       const eventFilterOwner=dowgoERC20.filters.USDCSupplyIncreased(dowgoAdmin.address)
       let events=await dowgoERC20.queryFilter(eventFilterOwner)
       expect(events[1]&&events[1].args[1]&&events[1].args[1]).to.equal(ONE_UNIT);
     });
-    it("Should not let non-admin address increase eth reserve", async function () {
+    it("Should not let non-admin address increase usdc reserve", async function () {
       try {
         await approveTransfer(usdcERC20,addr1,dowgoERC20.address,ONE_UNIT)
         const increaseTx = await dowgoERC20.connect(addr1).increase_usdc_supply(ONE_UNIT);
@@ -48,15 +55,21 @@ describe("DowgoERC20 - Eth Reserve", function () {
       // Check that reserve has NOT been increased
       expect(await dowgoERC20.totalUSDCSupply()).to.equal(initialUSDCReserve);
 
+      // Check that the dowgo sc doesn't own one more usdc
+      expect(await usdcERC20.balanceOf(dowgoERC20.address)).to.equal(initialUSDCReserve)
+
+      // Check that the admin sc was NOT debited 1 usdc
+      expect(await usdcERC20.balanceOf(dowgoAdmin.address)).to.equal(initialUSDCReserve)
+
       // check for USDCSupplyIncreased Event not fired
       const eventFilter=dowgoERC20.filters.USDCSupplyIncreased(addr1.address)
       let events=await dowgoERC20.queryFilter(eventFilter)
       expect(events.length===0).to.be.true
     });
   });
-  describe("DowgoERC20 - decreaseEthReserve", function () {
+  describe("DowgoERC20 - decrease_usdc_supply", function () {
 
-    it("Should let admin address decrease eth reserve", async function () {
+    it("Should let admin address decrease usdc reserve", async function () {
       const decreaseTx = await dowgoERC20.connect(dowgoAdmin).decrease_usdc_supply(ONE_UNIT);
 
       // wait until the transaction is mined
@@ -80,11 +93,15 @@ describe("DowgoERC20 - Eth Reserve", function () {
       let events2=await dowgoERC20.queryFilter(eventFilter2)
       expect(events2[0]&&events2[0].args[1]&&events2[0].args[1]).to.equal(ONE_UNIT);
 
-      // check pending usdc balance
+      // check pending usdc balances
+      // dowgoAdmin balance on contract
       expect(await dowgoERC20.usdcUserBalances(dowgoAdmin.address)).to.equal(0);
+      // dowgoAdmin usdc balance
       expect(await usdcERC20.balanceOf(dowgoAdmin.address)).to.equal(ONE_UNIT.mul(1000 + 1));
+      // dowgo sc usdc balance
+      expect(await usdcERC20.balanceOf(dowgoERC20.address)).to.equal(initialUSDCReserve.sub(ONE_UNIT));
     });
-    it("Should not let non-admin address decrease eth reserve", async function () {
+    it("Should not let non-admin address decrease usdc reserve", async function () {
       try {
         const decreaseTx = await dowgoERC20.connect(addr1).decrease_usdc_supply(ONE_UNIT);
   
@@ -101,8 +118,14 @@ describe("DowgoERC20 - Eth Reserve", function () {
       const eventFilter=dowgoERC20.filters.USDCSupplyDecreased(addr1.address)
       let events=await dowgoERC20.queryFilter(eventFilter)
       expect(events.length===0).to.be.true
+
+      // check pending usdc balances
+      // addr1 usdc balance
+      expect(await usdcERC20.balanceOf(addr1.address)).to.equal(initialUser1USDCBalance);
+      // dowgo sc usdc balance
+      expect(await usdcERC20.balanceOf(dowgoERC20.address)).to.equal(initialUSDCReserve);
     });
-    it("Should not let admin address decrease eth reserve bellow min ratio", async function () {
+    it("Should not let admin address decrease usdc reserve bellow min ratio", async function () {
       // Approve erc20 transfer
       await approveTransfer(usdcERC20,addr1,dowgoERC20.address,ONE_UNIT.mul(2))
       // First mine some tokens
@@ -127,6 +150,14 @@ describe("DowgoERC20 - Eth Reserve", function () {
       const eventFilter=dowgoERC20.filters.USDCSupplyDecreased(dowgoAdmin.address)
       let events=await dowgoERC20.queryFilter(eventFilter)
       expect(events.length===0).to.be.true
+
+      // check pending usdc balances
+      // dowgoAdmin balance on contract
+      expect(await dowgoERC20.usdcUserBalances(dowgoAdmin.address)).to.equal(0);
+      // dowgoAdmin 1000 usdc balance
+      expect(await usdcERC20.balanceOf(dowgoAdmin.address)).to.equal(initialUSDCReserve);
+      // dowgo sc usdc balance
+      expect(await usdcERC20.balanceOf(dowgoERC20.address)).to.equal(initialUSDCReserve.add(initialPrice));
     });
   });
 });

@@ -121,7 +121,9 @@ contract DowgoERC20 is ERC20, AccessControl {
 
     // Interactions
     // Send USDC to this contract
-    usdcToken.transferFrom(msg.sender,address(this), usdcAmount);
+    (bool sent) = usdcToken.transferFrom(msg.sender,address(this), usdcAmount);
+    require(sent, "Failed to transfer usdc from user to dowgo smart contract"); //TODO: test this with moch usdc
+
     // Mint new dowgo tokens
     _mint(msg.sender, dowgoAmount); // TODO check result?
     emit BuyDowgo(msg.sender, dowgoAmount, usdcAmount);
@@ -146,14 +148,17 @@ contract DowgoERC20 is ERC20, AccessControl {
   }
 
 // TODO : remove, doesnt seem necessary
-  function approve_user(uint256 amount) public {
-    usdcToken.approve(msg.sender,amount);
-  }
+  // function approve_user(uint256 amount) public {
+  //   usdcToken.approve(msg.sender,amount);
+  // }
 
   // Cash out available eth balance for a user
   function withdraw_usdc(uint256 usdcAmount) public {
     // Check that the user owns enough eth on the smart contract
-    require(usdcAmount <= usdcUserBalances[msg.sender]);
+    require(usdcAmount <= usdcUserBalances[msg.sender], "User doesn't have that much usdc credit"); //TODO test this
+    
+    uint256 totalUsdcBalance = usdcToken.balanceOf(address(this));
+    assert(usdcAmount<=totalUsdcBalance); //this shuold never error
 
     // Substract User balance
     usdcUserBalances[msg.sender] = usdcUserBalances[msg.sender].sub(usdcAmount);
@@ -162,7 +167,8 @@ contract DowgoERC20 is ERC20, AccessControl {
     // console.log(usdcToken.allowance(address(this), msg.sender));
     // console.log(usdcAmount);
     // require(usdcToken.allowance(address(this), msg.sender)>=usdcAmount,"Call approve_user function");
-    usdcToken.transfer( msg.sender, usdcAmount);
+    (bool sent) = usdcToken.transfer( msg.sender, usdcAmount);
+    require(sent, "Failed to usdc token to user"); //TODO: test this
     emit WithdrawUSDC(msg.sender, usdcAmount);
   }
 

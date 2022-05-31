@@ -35,24 +35,18 @@ describe("DowgoERC20 - sell", function () {
 
       // check pending eth balance
       expect(await dowgoERC20.usdcUserBalances(addr1.address)).to.equal(initialPrice);
-      console.log("sold")
-  //     const approveTx = await dowgoERC20.connect(addr1).approve_user(initialPrice.mul(2))
-  // await approveTx.wait();
-  // console.log(await usdcERC20.allowance(addr1.address,dowgoERC20.address))
-  // console.log(await usdcERC20.allowance(dowgoERC20.address,addr1.address),initialPrice)
+      
       // withdraw
       const withdrawTx = await dowgoERC20.connect(addr1).withdraw_usdc(initialPrice);
       await withdrawTx.wait();
-      console.log("withdrawn")
+      
       // check for WithdrawUSDC Event
       const eventFilter2=dowgoERC20.filters.WithdrawUSDC(addr1.address)
       let events2=await dowgoERC20.queryFilter(eventFilter2)
       expect(events2[0]&&events2[0].args[1]&&events2[0].args[1]).to.equal(initialPrice);
-      console.log("withdrawn")
 
       // check pending usdc balance
       expect(await dowgoERC20.usdcUserBalances(addr1.address)).to.equal(BigNumber.from(0));
-      console.log("withdrawn")
 
       // check that user 1 is back to owning 100 USDC
       expect(await usdcERC20.balanceOf(addr1.address)).to.equal(initialUser1USDCBalance);
