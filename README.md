@@ -1,3 +1,17 @@
+# Dowgo Alpha Contracts
+
+## Deploy on test net
+
+Run `npm run testnet` to start a testnet.
+
+Run `deploy-local`to run de deploy sequence:
+
+- deploy mock USDC contract from usdcCreator address
+- Send 100 USDC to user 1
+- Send 2000 USDC to dowgoAdmin
+- deploy dowgo contract
+- increase total reserve by 30 USDC, buys 1000 dowgo for the admin
+
 # Advanced Sample Hardhat Project
 
 This project demonstrates an advanced Hardhat use case, integrating other tools commonly used alongside Hardhat in the ecosystem.
