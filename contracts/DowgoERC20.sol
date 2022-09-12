@@ -148,7 +148,9 @@ contract DowgoERC20 is ERC20, AccessControl {
 
   // Let Admin buy Dowgo tokens without the collateral limit (because they will trigger the rebalancing)
   // Only requires targetRatio= 3% of real price
-  // NB: this allows the admin to inflate the supply drastically, but so would setgin the price very low //TODO: think about hose attack vectors
+  // NB: this allows the admin to inflate the supply drastically for a <targetRatio>=3% of the price
+  // Price update should be ran before
+  //TODO: think about those attack vectors
   function admin_buy_dowgo(uint256 dowgoAmount)
     public
     onlyRole(DEFAULT_ADMIN_ROLE)
