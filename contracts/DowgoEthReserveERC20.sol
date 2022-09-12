@@ -68,7 +68,9 @@ contract DowgoEthReserveERC20 is ERC20, AccessControl {
    */
   event PriceSet(address indexed user, uint256 amount);
 
-  constructor(uint256 _initialPrice, uint256 _targetRatio) ERC20("Dowgo", "DWG") {
+  constructor(uint256 _initialPrice, uint256 _targetRatio)
+    ERC20("Dowgo", "DWG")
+  {
     currentPrice = _initialPrice;
     targetRatio = _targetRatio;
     _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);

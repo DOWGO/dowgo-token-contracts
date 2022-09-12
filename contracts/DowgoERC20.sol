@@ -112,9 +112,17 @@ contract DowgoERC20 is ERC20, AccessControl {
     uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18);
 
     // Check buying dowgo won't let the collateral ratio go above target+collRange
-    uint256 targetUSDCCollateral=totalSupply().add(dowgoAmount).mul(currentPrice).div(10**18).mul(targetRatio).div(10**4);
+    uint256 targetUSDCCollateral = totalSupply()
+      .add(dowgoAmount)
+      .mul(currentPrice)
+      .div(10**18)
+      .mul(targetRatio)
+      .div(10**4);
     require(
-      totalUSDCSupply.add(usdcAmount)<targetUSDCCollateral.mul(collRange).div(10**4).add(targetUSDCCollateral),
+      totalUSDCSupply.add(usdcAmount) <
+        targetUSDCCollateral.mul(collRange).div(10**4).add(
+          targetUSDCCollateral
+        ),
       "Contract already sold all dowgo tokens before next rebalancing"
     );
 
@@ -141,8 +149,16 @@ contract DowgoERC20 is ERC20, AccessControl {
   // Let Admin buy Dowgo tokens without the collateral limit (because they will trigger the rebalancing)
   // Only requires targetRatio= 3% of real price
   // NB: this allows the admin to inflate the supply drastically, but so would setgin the price very low //TODO: think about hose attack vectors
-  function admin_buy_dowgo(uint256 dowgoAmount) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
-    uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18).mul(targetRatio).div(10**4);
+  function admin_buy_dowgo(uint256 dowgoAmount)
+    public
+    onlyRole(DEFAULT_ADMIN_ROLE)
+    returns (bool)
+  {
+    uint256 usdcAmount = dowgoAmount
+      .mul(currentPrice)
+      .div(10**18)
+      .mul(targetRatio)
+      .div(10**4);
     // Check that the user has enough USDC allowance on the contract
     require(
       usdcAmount <= get_usdc_allowance(),
@@ -169,9 +185,17 @@ contract DowgoERC20 is ERC20, AccessControl {
     // Check that the user owns enough tokens
     require(balanceOf(msg.sender) >= dowgoAmount);
     // Check selling dowgo won't let the collateral ratio go under target minus collRange
-    uint256 targetUSDCCollateral=totalSupply().sub(dowgoAmount).mul(currentPrice).div(10**18).mul(targetRatio).div(10**4);
+    uint256 targetUSDCCollateral = totalSupply()
+      .sub(dowgoAmount)
+      .mul(currentPrice)
+      .div(10**18)
+      .mul(targetRatio)
+      .div(10**4);
     require(
-      totalUSDCSupply.sub(usdcAmount)>targetUSDCCollateral.sub(targetUSDCCollateral.mul(collRange).div(10**4)),
+      totalUSDCSupply.sub(usdcAmount) >
+        targetUSDCCollateral.sub(
+          targetUSDCCollateral.mul(collRange).div(10**4)
+        ),
       "Contract already bought all dowgo tokens before next rebalancing"
     );
     //this should never happen, hence the assert
@@ -228,10 +252,16 @@ contract DowgoERC20 is ERC20, AccessControl {
     onlyRole(DEFAULT_ADMIN_ROLE)
   {
     // Check that this action won't let the collateral drop under target minus collRange
-    uint256 targetUSDCCollateral=totalSupply().mul(currentPrice).div(10**18).mul(targetRatio).div(10**4);
+    uint256 targetUSDCCollateral = totalSupply()
+      .mul(currentPrice)
+      .div(10**18)
+      .mul(targetRatio)
+      .div(10**4);
     require(
       totalUSDCSupply.sub(usdcAmount) >=
-        targetUSDCCollateral.sub(targetUSDCCollateral.mul(collRange).div(10**4)),
+        targetUSDCCollateral.sub(
+          targetUSDCCollateral.mul(collRange).div(10**4)
+        ),
       "Cannot go under min ratio for eth reserves"
     );
 

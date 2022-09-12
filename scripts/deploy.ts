@@ -6,19 +6,33 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { collRange, initialDowgoSupply, initialPrice, initialUSDCReserve, initialUser1USDCBalance, initRatio, mockUSDCSupply } from "../test/test-constants";
+import {
+  collRange,
+  initialDowgoSupply,
+  initialPrice,
+  initialUSDCReserve,
+  initialUser1USDCBalance,
+  initRatio,
+  mockUSDCSupply,
+} from "../test/test-constants";
 import { approveTransfer } from "../test/test-utils";
-import { DowgoERC20, DowgoERC20__factory, ERC20, ERC20PresetFixedSupply__factory } from "../typechain";
-
+import {
+  DowgoERC20,
+  DowgoERC20__factory,
+  ERC20,
+  ERC20PresetFixedSupply__factory,
+} from "../typechain";
 
 // TODO write this with actual USDC address
 async function main() {
-  let dowgoERC20:DowgoERC20, usdcERC20:ERC20
-  let dowgoAdmin:SignerWithAddress
-  let usdcCreator:SignerWithAddress
-  let addr1:SignerWithAddress
-  let addr2:SignerWithAddress
-console.log("start");
+  let dowgoERC20: DowgoERC20, usdcERC20: ERC20;
+  let dowgoAdmin: SignerWithAddress;
+  let usdcCreator: SignerWithAddress;
+  let addr1: SignerWithAddress;
+  let addr2: SignerWithAddress;
+
+  console.log("start deploy script...");
+
   // Hardhat always runs the compile task when running scripts with its command
   // line interface.
   //
@@ -27,35 +41,68 @@ console.log("start");
   // await hre.run('compile');
 
   // We get the contract to deploy
-  ([dowgoAdmin, usdcCreator, addr1, addr2] = await ethers.getSigners());
+  [dowgoAdmin, usdcCreator, addr1, addr2] = await ethers.getSigners();
 
-      // TODO: different script for Alpha
+  // TODO: different script for Alpha
 
-      // deploy mock USDC contract from usdcCreator address
-      const ERC20Factory:ERC20PresetFixedSupply__factory = await ethers.getContractFactory("ERC20PresetFixedSupply");
-      usdcERC20 = await ERC20Factory.connect(usdcCreator).deploy("USDC","USDC",mockUSDCSupply,usdcCreator.address);
-      usdcERC20=await usdcERC20.deployed();
+  // deploy mock USDC contract from usdcCreator address
+  const ERC20Factory: ERC20PresetFixedSupply__factory =
+    await ethers.getContractFactory("ERC20PresetFixedSupply");
+  usdcERC20 = await ERC20Factory.connect(usdcCreator).deploy(
+    "USDC",
+    "USDC",
+    mockUSDCSupply,
+    usdcCreator.address
+  );
+  usdcERC20 = await usdcERC20.deployed();
 
-      // Send 100 USDC to user 1
-      await approveTransfer(usdcERC20,usdcCreator,addr1.address,initialUser1USDCBalance)
-      const sendToUser1Tx = await usdcERC20.connect(usdcCreator).transfer(addr1.address,initialUser1USDCBalance);
-      await sendToUser1Tx.wait();
+  // Send 100 USDC to user 1
+  await approveTransfer(
+    usdcERC20,
+    usdcCreator,
+    addr1.address,
+    initialUser1USDCBalance
+  );
+  const sendToUser1Tx = await usdcERC20
+    .connect(usdcCreator)
+    .transfer(addr1.address, initialUser1USDCBalance);
+  await sendToUser1Tx.wait();
 
-      // Send 2000 USDC to dowgoAdmin
-      await approveTransfer(usdcERC20,usdcCreator,dowgoAdmin.address,initialUSDCReserve)
-      const sendToOwnerTx = await usdcERC20.connect(usdcCreator).transfer(dowgoAdmin.address,initialUSDCReserve.mul(2));
-      await sendToOwnerTx.wait();
-      
-      // deploy contract
-      const DowgoERC20Factory:DowgoERC20__factory = await ethers.getContractFactory("DowgoERC20");
-      dowgoERC20 = await DowgoERC20Factory.connect(dowgoAdmin).deploy(initialPrice,initRatio, collRange, usdcERC20.address);
-      await dowgoERC20.deployed();
-  
-      // increase total reserve by 30 USDC, buys 1000 dowgo for the admin
-      // TODO: implement an admin_sell function to end contract
-      await approveTransfer(usdcERC20,dowgoAdmin,dowgoERC20.address, initialUSDCReserve)
-      const increaseTx = await dowgoERC20.connect(dowgoAdmin).admin_buy_dowgo(initialDowgoSupply);
-      await increaseTx.wait();
+  // Send 2000 USDC to dowgoAdmin
+  await approveTransfer(
+    usdcERC20,
+    usdcCreator,
+    dowgoAdmin.address,
+    initialUSDCReserve
+  );
+  const sendToOwnerTx = await usdcERC20
+    .connect(usdcCreator)
+    .transfer(dowgoAdmin.address, initialUSDCReserve.mul(2));
+  await sendToOwnerTx.wait();
+
+  // deploy contract
+  const DowgoERC20Factory: DowgoERC20__factory =
+    await ethers.getContractFactory("DowgoERC20");
+  dowgoERC20 = await DowgoERC20Factory.connect(dowgoAdmin).deploy(
+    initialPrice,
+    initRatio,
+    collRange,
+    usdcERC20.address
+  );
+  await dowgoERC20.deployed();
+
+  // increase total reserve by 30 USDC, buys 1000 dowgo for the admin
+  // TODO: implement an admin_sell function to end contract
+  await approveTransfer(
+    usdcERC20,
+    dowgoAdmin,
+    dowgoERC20.address,
+    initialUSDCReserve
+  );
+  const increaseTx = await dowgoERC20
+    .connect(dowgoAdmin)
+    .admin_buy_dowgo(initialDowgoSupply);
+  await increaseTx.wait();
 
   console.log("mockERC20 deployed to:", usdcERC20.address);
   console.log("DowgoERC20 deployed to:", dowgoERC20.address);

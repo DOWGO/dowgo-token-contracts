@@ -9,7 +9,7 @@
     "deploy": "npx hardhat run scripts/deploy.ts",
     "deploy-local": "npx hardhat run scripts/deploy.ts --network localhost",
     "lint-with-eslint": "npx eslint '**/*.{js,ts}' --fix && npx prettier '**/*.{json,sol,md}' --write && npx solhint 'contracts/**/*.sol' --fix",
-    "lint": "npx prettier '**/*.{json,sol,md}' --write && npx solhint 'contracts/**/*.sol' --fix"
+    "lint": "npx prettier '**/*.{js,ts,md}' --write && npx solhint 'contracts/**/*.sol' --fix"
   },
   "repository": {
     "type": "git",
