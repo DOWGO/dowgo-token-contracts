@@ -45,6 +45,16 @@ contract DowgoERC20 is ERC20, AccessControl {
     uint256 dowgoAmount,
     uint256 usdcAmount
   );
+  /**
+   * @dev Emitted when a user buys dowgo tokens from the contract
+   *
+   * Note that `value` may be zero.
+   */
+  event AdminBuyDowgo(
+    address indexed buyer,
+    uint256 dowgoAmount,
+    uint256 usdcAmount
+  );
 
   /**
    * @dev Emitted when a user sells dowgo tokens back to the contract
@@ -52,6 +62,16 @@ contract DowgoERC20 is ERC20, AccessControl {
    * Note that `value` may be zero.
    */
   event SellDowgo(
+    address indexed seller,
+    uint256 dowgoAmount,
+    uint256 usdcAmount
+  );
+  /**
+   * @dev Emitted when a user sells dowgo tokens back to the contract
+   *
+   * Note that `value` may be zero.
+   */
+  event AdminSellDowgo(
     address indexed seller,
     uint256 dowgoAmount,
     uint256 usdcAmount
@@ -150,17 +170,19 @@ contract DowgoERC20 is ERC20, AccessControl {
   // Only requires targetRatio= 3% of real price
   // NB: this allows the admin to inflate the supply drastically for a <targetRatio>=3% of the price
   // Price update should be ran before
-  //TODO: think about those attack vectors
+  
   function admin_buy_dowgo(uint256 dowgoAmount)
     public
     onlyRole(DEFAULT_ADMIN_ROLE)
     returns (bool)
   {
+    // USDC Amount is targetRatio % of real amount because the admin will increase USDC balance (and buy stocks) in FTX directly
     uint256 usdcAmount = dowgoAmount
       .mul(currentPrice)
       .div(10**18)
       .mul(targetRatio)
       .div(10**4);
+
     // Check that the user has enough USDC allowance on the contract
     require(
       usdcAmount <= get_usdc_allowance(),
@@ -177,15 +199,17 @@ contract DowgoERC20 is ERC20, AccessControl {
 
     // Mint new dowgo tokens
     _mint(msg.sender, dowgoAmount); // TODO check result?
-    emit BuyDowgo(msg.sender, dowgoAmount, usdcAmount);
+    emit AdminBuyDowgo(msg.sender, dowgoAmount, usdcAmount);
     return true;
   }
 
   // Sell Dowgo tokens against ETH // TODO check non-zero
-  function sell_dowgo(uint256 dowgoAmount) external {
+  function sell_dowgo(uint256 dowgoAmount) public returns (bool) {
     uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18);
+
     // Check that the user owns enough tokens
-    require(balanceOf(msg.sender) >= dowgoAmount);
+    require(balanceOf(msg.sender) >= dowgoAmount, "User doesn't own enough tokens to sell");
+
     // Check selling dowgo won't let the collateral ratio go under target minus collRange
     uint256 targetUSDCCollateral = totalSupply()
       .sub(dowgoAmount)
@@ -200,16 +224,44 @@ contract DowgoERC20 is ERC20, AccessControl {
         ),
       "Contract already bought all dowgo tokens before next rebalancing"
     );
+
     //this should never happen, hence the assert
     assert(totalUSDCSupply >= usdcAmount);
 
-    // Transfer Eth from the reserve to the user eth balance
+    // Transfer USDC from the reserve to the user USDC balance
+    totalUSDCSupply = totalUSDCSupply.sub(usdcAmount);
+    usdcUserBalances[msg.sender] = usdcUserBalances[msg.sender].add(usdcAmount);
+
+    // Interactions
+    _burn(msg.sender, dowgoAmount); // TODO check result?
+    emit SellDowgo(msg.sender, dowgoAmount, usdcAmount);
+
+    return true;
+  }
+
+  // Sell Dowgo tokens against ETH // TODO check non-zero
+  function admin_sell_dowgo(uint256 dowgoAmount) public
+    onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+    // USDC Amount is targetRatio % of real amount because the admin will sell stocks in FTX directly
+    uint256 usdcAmount = dowgoAmount
+      .mul(currentPrice)
+      .div(10**18)
+      .mul(targetRatio)
+      .div(10**4);
+
+
+    // Check that the user owns enough tokens
+    require(balanceOf(msg.sender) >= dowgoAmount, "Admin doesn't own enough tokens to sell");
+
+    // Transfer USDC from the reserve to the user eth balance
     totalUSDCSupply = totalUSDCSupply.sub(usdcAmount);
     usdcUserBalances[msg.sender] = usdcUserBalances[msg.sender].add(usdcAmount);
 
     //interactions
     _burn(msg.sender, dowgoAmount); // TODO check result?
-    emit SellDowgo(msg.sender, dowgoAmount, usdcAmount);
+    emit AdminSellDowgo(msg.sender, dowgoAmount, usdcAmount);
+
+    return true;
   }
 
   // Cash out available eth balance for a user
