@@ -207,7 +207,7 @@ describe("DowgoERC20 - USDC Reserve", function () {
         await decreaseTx.wait();
       } catch (e: any) {
         expect(e.toString()).to.equal(
-          `Error: VM Exception while processing transaction: reverted with reason string 'Cannot go under min ratio for eth reserves'`
+          `Error: VM Exception while processing transaction: reverted with reason string 'Cannot go under min ratio for USDC reserves'`
         );
       }
 

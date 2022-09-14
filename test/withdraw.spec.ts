@@ -24,7 +24,7 @@ describe("DowgoERC20 - withdraw", function () {
       await decreaseTx.wait();
     } catch (e: any) {
       expect(e.toString()).to.equal(
-        `Error: VM Exception while processing transaction: reverted with reason string 'User doesn't have that much usdc credit'`
+        `Error: VM Exception while processing transaction: reverted with reason string 'User doesn't have that much USDC credit'`
       );
     }
 

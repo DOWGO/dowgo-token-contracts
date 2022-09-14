@@ -48,7 +48,7 @@ describe("DowgoERC20 - sell", function () {
       SELL_AMOUNT
     );
 
-    // check pending eth balance
+    // check pending USDC balance
     expect(await dowgoERC20.usdcUserBalances(addr1.address)).to.equal(
       initialPrice
     );
@@ -167,7 +167,7 @@ describe("DowgoERC20 - sell", function () {
       .mul(initRatio)
       .div(BigNumber.from(10000));
 
-    // check pending eth balance
+    // check pending USDC balance
     expect(await dowgoERC20.usdcUserBalances(dowgoAdmin.address)).to.equal(
       usdcFromAdminSell
     );

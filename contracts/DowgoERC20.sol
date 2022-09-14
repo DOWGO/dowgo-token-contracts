@@ -12,29 +12,26 @@ import "hardhat/console.sol"; //TODO: get rid of this in prod
 contract DowgoERC20 is ERC20, AccessControl {
   using SafeMath for uint256;
 
-  // + USDC +
-
   // USDC token instance
   IERC20 usdcToken;
 
-  /// Total supply of Ethereum in the contract
+  /// Total supply of USDC in the contract
   uint256 public totalUSDCSupply;
 
-  // Eth Balances of all token owners
+  // USDC Balances of all token owners
   mapping(address => uint256) public usdcUserBalances;
 
   // Price in USDC-wei/Dowgo
-  uint256 public currentPrice; //TODO: reduce int range?
+  uint256 public currentPrice;
 
   // Min collateral ratio out of total AUM. Should be 3%, is a number out of 10k (so 300 for 3%)
-  uint256 public targetRatio; //TODO: reduce int range?
+  uint16 public targetRatio;
 
-  // collateral range, the % (out of 10k) around which the ratio can vary
-  uint256 public collRange; //TODO: reduce int range?
+  // Collateral range, the % (out of 10k) around which the ratio can vary
+  uint16 public collRange;
 
   // Events
 
-  //TODO: event descriptions
   /**
    * @dev Emitted when a user buys dowgo tokens from the contract
    *
@@ -46,7 +43,7 @@ contract DowgoERC20 is ERC20, AccessControl {
     uint256 usdcAmount
   );
   /**
-   * @dev Emitted when a user buys dowgo tokens from the contract
+   * @dev Emitted when the admin buys dowgo tokens from the contract at targetRatio of the price
    *
    * Note that `value` may be zero.
    */
@@ -66,8 +63,9 @@ contract DowgoERC20 is ERC20, AccessControl {
     uint256 dowgoAmount,
     uint256 usdcAmount
   );
+
   /**
-   * @dev Emitted when a user sells dowgo tokens back to the contract
+   * @dev Emitted when the admin sells dowgo tokens back to the contract at targetRatio of the price
    *
    * Note that `value` may be zero.
    */
@@ -78,35 +76,35 @@ contract DowgoERC20 is ERC20, AccessControl {
   );
 
   /**
-   * @dev Emitted when a user withdraws their eth balance from the contract
+   * @dev Emitted when a user withdraws their USDC balance from the contract
    *
    * Note that `value` may be zero.
    */
   event WithdrawUSDC(address indexed user, uint256 amount);
 
   /**
-   * @dev Emitted when a user withdraws their eth balance from the contract
+   * @dev Emitted when the admin increases the USDC supply to reflect the stock market's evolution
    *
    * Note that `value` may be zero.
    */
   event USDCSupplyIncreased(address indexed user, uint256 amount);
 
   /**
-   * @dev Emitted when a user withdraws their eth balance from the contract
+   * @dev Emitted when the admin increases the USDC supply to reflect the stock market's evolution
    *
    * Note that `value` may be zero.
    */
   event USDCSupplyDecreased(address indexed user, uint256 amount);
 
   /**
-   * @dev Emitted when a user withdraws their eth balance from the contract
+   * @dev Emitted when the admin sets the new price for the dowgo token to reflect the stock market's evolution
    */
   event PriceSet(address indexed user, uint256 amount);
 
   constructor(
     uint256 _initialPrice,
-    uint256 _targetRatio,
-    uint256 _collRange,
+    uint16 _targetRatio,
+    uint16 _collRange,
     address usdcTokenAddress
   ) ERC20("Dowgo", "DWG") {
     usdcToken = IERC20(usdcTokenAddress);
@@ -116,9 +114,14 @@ contract DowgoERC20 is ERC20, AccessControl {
     _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
   }
 
-  // Grant a user the role of admin //TODO: remove admin?
+  // Grant a user the role of admin
   function grant_admin(address newAdmin) public onlyRole(DEFAULT_ADMIN_ROLE) {
     grantRole(DEFAULT_ADMIN_ROLE, newAdmin);
+  }
+
+  // Revoke from a user the role of admin
+  function revoke_admin(address banishedAdmin) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    revokeRole(DEFAULT_ADMIN_ROLE, banishedAdmin);
   }
 
   // Get user USDC Allowance to use this contract
@@ -126,9 +129,9 @@ contract DowgoERC20 is ERC20, AccessControl {
     return usdcToken.allowance(msg.sender, address(this));
   }
 
-  // Buy Dowgo tokens by sending enough USDC // TODO: allow zero tsf? Put usdc amoutn in input?
+  // Buy Dowgo tokens by sending enough USDC
   function buy_dowgo(uint256 dowgoAmount) public returns (bool) {
-    // usdc amount for the desired dowgo amount
+    // USDC amount for the desired dowgo amount
     uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18);
 
     // Check buying dowgo won't let the collateral ratio go above target+collRange
@@ -153,12 +156,12 @@ contract DowgoERC20 is ERC20, AccessControl {
     );
 
     // Add USDC to the total reserve
-    totalUSDCSupply = totalUSDCSupply.add(usdcAmount); // TODO check balance dif?
+    totalUSDCSupply = totalUSDCSupply.add(usdcAmount);
 
     // Interactions
     // Send USDC to this contract
     bool sent = usdcToken.transferFrom(msg.sender, address(this), usdcAmount);
-    require(sent, "Failed to transfer usdc from user to dowgo smart contract"); //TODO: test this with moch usdc
+    require(sent, "Failed to transfer USDC from user to dowgo smart contract"); //TODO: test this with moch usdc
 
     // Mint new dowgo tokens
     _mint(msg.sender, dowgoAmount); // TODO check result?
@@ -190,20 +193,20 @@ contract DowgoERC20 is ERC20, AccessControl {
     );
 
     // Add USDC to the total reserve
-    totalUSDCSupply = totalUSDCSupply.add(usdcAmount); // TODO check balance dif?
+    totalUSDCSupply = totalUSDCSupply.add(usdcAmount);
 
     // Interactions
     // Send USDC to this contract
     bool sent = usdcToken.transferFrom(msg.sender, address(this), usdcAmount);
-    require(sent, "Failed to transfer usdc from user to dowgo smart contract"); //TODO: test this with moch usdc
+    require(sent, "Failed to transfer USDC from user to dowgo smart contract");
 
     // Mint new dowgo tokens
-    _mint(msg.sender, dowgoAmount); // TODO check result?
+    _mint(msg.sender, dowgoAmount);
     emit AdminBuyDowgo(msg.sender, dowgoAmount, usdcAmount);
     return true;
   }
 
-  // Sell Dowgo tokens against ETH // TODO check non-zero
+  // Sell Dowgo tokens against ETH
   function sell_dowgo(uint256 dowgoAmount) public returns (bool) {
     uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18);
 
@@ -239,7 +242,7 @@ contract DowgoERC20 is ERC20, AccessControl {
     return true;
   }
 
-  // Sell Dowgo tokens against ETH // TODO check non-zero
+  // Sell Dowgo tokens against ETH
   function admin_sell_dowgo(uint256 dowgoAmount) public
     onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
     // USDC Amount is targetRatio % of real amount because the admin will sell stocks in FTX directly
@@ -253,23 +256,23 @@ contract DowgoERC20 is ERC20, AccessControl {
     // Check that the user owns enough tokens
     require(balanceOf(msg.sender) >= dowgoAmount, "Admin doesn't own enough tokens to sell");
 
-    // Transfer USDC from the reserve to the user eth balance
+    // Transfer USDC from the reserve to the user USDC balance
     totalUSDCSupply = totalUSDCSupply.sub(usdcAmount);
     usdcUserBalances[msg.sender] = usdcUserBalances[msg.sender].add(usdcAmount);
 
     //interactions
-    _burn(msg.sender, dowgoAmount); // TODO check result?
+    _burn(msg.sender, dowgoAmount);
     emit AdminSellDowgo(msg.sender, dowgoAmount, usdcAmount);
 
     return true;
   }
 
-  // Cash out available eth balance for a user
+  // Cash out available USDC balance for a user
   function withdraw_usdc(uint256 usdcAmount) public {
-    // Check that the user owns enough eth on the smart contract
+    // Check that the user owns enough USDC on the smart contract
     require(
       usdcAmount <= usdcUserBalances[msg.sender],
-      "User doesn't have that much usdc credit"
+      "User doesn't have that much USDC credit"
     );
 
     uint256 totalUsdcBalance = usdcToken.balanceOf(address(this));
@@ -280,7 +283,7 @@ contract DowgoERC20 is ERC20, AccessControl {
 
     //interactions //TODO: check return value?
     bool sent = usdcToken.transfer(msg.sender, usdcAmount);
-    require(sent, "Failed to usdc token to user"); //TODO: test this
+    require(sent, "Failed to withdraw USDC to user"); //TODO: test this with mock usdc
     emit WithdrawUSDC(msg.sender, usdcAmount);
   }
 
@@ -291,7 +294,7 @@ contract DowgoERC20 is ERC20, AccessControl {
   {
     // Effect
     // Add Eth to the total reserve
-    totalUSDCSupply = totalUSDCSupply.add(usdcAmount); // TODO check balance dif?
+    totalUSDCSupply = totalUSDCSupply.add(usdcAmount);
 
     //Interation
     // Send USDC to this contract
@@ -316,11 +319,11 @@ contract DowgoERC20 is ERC20, AccessControl {
         targetUSDCCollateral.sub(
           targetUSDCCollateral.mul(collRange).div(10**4)
         ),
-      "Cannot go under min ratio for eth reserves"
+      "Cannot go under min ratio for USDC reserves"
     );
 
-    // Remove Eth from the total reserve
-    totalUSDCSupply = totalUSDCSupply.sub(usdcAmount); // TODO check balance dif?
+    // Remove USDC from the total reserve
+    totalUSDCSupply = totalUSDCSupply.sub(usdcAmount);
     usdcUserBalances[msg.sender] = usdcUserBalances[msg.sender].add(usdcAmount);
 
     emit USDCSupplyDecreased(msg.sender, usdcAmount);
