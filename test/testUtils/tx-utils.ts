@@ -1,16 +1,7 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers, network } from "hardhat";
-import {
-  collRange,
-  initialDowgoSupply,
-  initialPrice,
-  initialUSDCReserve,
-  initialUser1USDCBalance,
-  initRatio,
-  mockUSDCSupply,
-  ONE_UNIT,
-} from "../test-constants";
+import { ONE_UNIT } from "../test-constants";
 
 import {
   DowgoERC20,
@@ -61,6 +52,7 @@ export const increaseDowgoSupply = async (
   amount: BigNumber
 ) => {
   let price = await dowgoERC20.currentPrice();
+  let initRatio = await dowgoERC20.targetRatio();
   await approveTransfer(
     usdcERC20,
     dowgoAdmin,
@@ -71,4 +63,13 @@ export const increaseDowgoSupply = async (
     .connect(dowgoAdmin)
     .admin_buy_dowgo(amount);
   await increaseTx.wait();
+};
+
+export const whitelistUser = async (
+  dowgoERC20: DowgoERC20Whitelisted,
+  dowgoAdmin: SignerWithAddress,
+  user: string
+) => {
+  const whitelistUser1Tx = await dowgoERC20.connect(dowgoAdmin).whitelist(user);
+  await whitelistUser1Tx.wait();
 };

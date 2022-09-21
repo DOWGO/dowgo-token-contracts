@@ -26,6 +26,7 @@ import {
   approveTransfer,
   increaseDowgoSupply,
   sendUSDCToUser,
+  whitelistUser,
 } from "./tx-utils";
 
 export const setupTestEnvDowgoERC20Whitelisted = async () => {
@@ -100,26 +101,10 @@ export const setupTestEnvDowgoERC20Whitelisted = async () => {
     dowgoAdmin,
     initialDowgoSupply
   );
-  // await approveTransfer(
-  //   usdcERC20,
-  //   dowgoAdmin,
-  //   dowgoERC20.address,
-  //   initialUSDCReserve
-  // );
-  // const increaseTx = await dowgoERC20
-  //   .connect(dowgoAdmin)
-  //   .admin_buy_dowgo(initialDowgoSupply);
-  // await increaseTx.wait();
 
   // whitelist user 1 and 2
-  const whitelistUser1Tx = await dowgoERC20
-    .connect(dowgoAdmin)
-    .whitelist(addr1.address);
-  await whitelistUser1Tx.wait();
-  const whitelistUser2Tx = await dowgoERC20
-    .connect(dowgoAdmin)
-    .whitelist(addr2.address);
-  await whitelistUser2Tx.wait();
+  await whitelistUser(dowgoERC20, dowgoAdmin, addr1.address);
+  await whitelistUser(dowgoERC20, dowgoAdmin, addr2.address);
 
   return { dowgoERC20, dowgoAdmin, addr1, addr2, addr3, usdcERC20 };
 };
