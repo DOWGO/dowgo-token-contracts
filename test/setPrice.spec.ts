@@ -4,7 +4,7 @@ import { BigNumber } from "ethers";
 import { ethers, network } from "hardhat";
 import { DowgoERC20, DowgoERC20__factory } from "../typechain";
 import { initialUSDCReserve, ONE_UNIT } from "./test-constants";
-import { setupTestEnvDowgoERC20Whitelisted } from "./test-utils";
+import { setupTestEnvDowgoERC20Whitelisted } from "./testUtils/setup";
 
 describe("DowgoERC20 - setPrice", function () {
   let dowgoERC20: DowgoERC20;

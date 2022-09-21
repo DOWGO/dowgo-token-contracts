@@ -15,13 +15,15 @@ import {
   initRatio,
   mockUSDCSupply,
 } from "../test/test-constants";
-import { approveTransfer } from "../test/test-utils";
+import { approveTransfer } from "../test/testUtils";
 import {
   DowgoERC20,
   DowgoERC20__factory,
   ERC20,
   ERC20PresetFixedSupply__factory,
 } from "../typechain";
+
+// +++++ NB TEST UTILS IS MORE UP TO DATE +++++
 
 // TODO write this with actual USDC address
 async function main() {

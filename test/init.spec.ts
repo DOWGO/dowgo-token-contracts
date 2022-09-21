@@ -9,7 +9,7 @@ import {
   initialUser1USDCBalance,
   initRatio,
 } from "./test-constants";
-import { setupTestEnvDowgoERC20Whitelisted } from "./test-utils";
+import { setupTestEnvDowgoERC20Whitelisted } from "./testUtils/setup";
 
 describe("DowgoERC20 - init", function () {
   let dowgoERC20: DowgoERC20, usdcERC20: ERC20;

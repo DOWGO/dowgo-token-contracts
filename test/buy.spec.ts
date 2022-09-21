@@ -13,7 +13,7 @@ import {
 import {
   approveTransfer,
   setupTestEnvDowgoERC20Whitelisted,
-} from "./test-utils";
+} from "./testUtils";
 
 describe("DowgoERC20 - buy", function () {
   let dowgoERC20: DowgoERC20;

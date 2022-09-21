@@ -10,7 +10,7 @@ import {
   initRatio,
   mockUSDCSupply,
   ONE_UNIT,
-} from "./test-constants";
+} from "../test-constants";
 
 import {
   DowgoERC20,
@@ -19,17 +19,8 @@ import {
   DowgoERC20Whitelisted__factory,
   ERC20,
   ERC20PresetFixedSupply__factory,
-} from "../typechain";
-
-export const approveTransfer = async (
-  usdcERC20: ERC20,
-  from: SignerWithAddress,
-  to: string,
-  amount: BigNumber
-) => {
-  const approveTx = await usdcERC20.connect(from).approve(to, amount);
-  await approveTx.wait();
-};
+} from "../../typechain";
+import { approveTransfer, sendUSDCToUser } from "./tx-utils";
 
 export const setupTestEnvDowgoERC20Whitelisted = async () => {
   let dowgoERC20: DowgoERC20Whitelisted, usdcERC20: ERC20;
@@ -68,10 +59,12 @@ export const setupTestEnvDowgoERC20Whitelisted = async () => {
     addr1.address,
     initialUser1USDCBalance
   );
-  const sendToUser1Tx = await usdcERC20
-    .connect(usdcCreator)
-    .transfer(addr1.address, initialUser1USDCBalance);
-  await sendToUser1Tx.wait();
+  await sendUSDCToUser(
+    usdcERC20,
+    usdcCreator,
+    addr1.address,
+    initialUser1USDCBalance
+  );
 
   // Send 100 USDC to user 3
   await approveTransfer(
@@ -80,10 +73,12 @@ export const setupTestEnvDowgoERC20Whitelisted = async () => {
     addr3.address,
     initialUser1USDCBalance
   );
-  const sendToUser3Tx = await usdcERC20
-    .connect(usdcCreator)
-    .transfer(addr3.address, initialUser1USDCBalance);
-  await sendToUser3Tx.wait();
+  await sendUSDCToUser(
+    usdcERC20,
+    usdcCreator,
+    addr3.address,
+    initialUser1USDCBalance
+  );
 
   // Send 2000 USDC to dowgoAdmin
   await approveTransfer(
@@ -92,10 +87,12 @@ export const setupTestEnvDowgoERC20Whitelisted = async () => {
     dowgoAdmin.address,
     initialUSDCReserve
   );
-  const sendToOwnerTx = await usdcERC20
-    .connect(usdcCreator)
-    .transfer(dowgoAdmin.address, initialUSDCReserve.mul(2));
-  await sendToOwnerTx.wait();
+  await sendUSDCToUser(
+    usdcERC20,
+    usdcCreator,
+    dowgoAdmin.address,
+    initialUSDCReserve.mul(2)
+  );
 
   // deploy contract
   const DowgoERC20WhitelistedFactory: DowgoERC20Whitelisted__factory =

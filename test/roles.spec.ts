@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { ethers } from "ethers";
 import { DowgoERC20Whitelisted, ERC20 } from "../typechain";
 
-import { setupTestEnvDowgoERC20Whitelisted } from "./test-utils";
+import { setupTestEnvDowgoERC20Whitelisted } from "./testUtils";
 
 describe("DowgoERC20 - roles", function () {
   let dowgoERC20: DowgoERC20Whitelisted, usdcERC20: ERC20;

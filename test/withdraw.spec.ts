@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { DowgoERC20, ERC20 } from "../typechain";
 import { ONE_UNIT } from "./test-constants";
-import { setupTestEnvDowgoERC20Whitelisted } from "./test-utils";
+import { setupTestEnvDowgoERC20Whitelisted } from "./testUtils/setup";
 
 describe("DowgoERC20 - withdraw", function () {
   let dowgoERC20: DowgoERC20;
