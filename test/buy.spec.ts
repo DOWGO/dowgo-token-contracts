@@ -10,7 +10,10 @@ import {
   initialUser1USDCBalance,
   initRatio,
 } from "./test-constants";
-import { approveTransfer, setupTestEnv } from "./test-utils";
+import {
+  approveTransfer,
+  setupTestEnvDowgoERC20Whitelisted,
+} from "./test-utils";
 
 describe("DowgoERC20 - buy", function () {
   let dowgoERC20: DowgoERC20;
@@ -18,11 +21,12 @@ describe("DowgoERC20 - buy", function () {
   let dowgoAdmin: SignerWithAddress;
   let addr1: SignerWithAddress;
   let addr2: SignerWithAddress;
+  let addr3: SignerWithAddress;
   const BUY_AMOUNT = ONE_UNIT;
 
   beforeEach(async () => {
-    ({ dowgoERC20, addr1, addr2, usdcERC20, dowgoAdmin } =
-      await setupTestEnv());
+    ({ dowgoERC20, addr1, addr2, addr3, usdcERC20, dowgoAdmin } =
+      await setupTestEnvDowgoERC20Whitelisted());
   });
   it("Should let first address buy dowgo token against usdc", async function () {
     // Approve erc20 transfer
@@ -92,6 +96,35 @@ describe("DowgoERC20 - buy", function () {
     expect(await dowgoERC20.totalUSDCSupply()).to.equal(initialUSDCReserve);
 
     // check for PriceSet Event not fired
+    const eventFilter = dowgoERC20.filters.BuyDowgo(addr1.address);
+    let events = await dowgoERC20.queryFilter(eventFilter);
+    expect(events.length === 0).to.be.true;
+  });
+  it("Should not let user 3 - who isn't whitelisted - buy dowgo", async function () {
+    try {
+      // Approve erc20 transfer
+      await approveTransfer(
+        usdcERC20,
+        addr3,
+        dowgoERC20.address,
+        BUY_AMOUNT.mul(initPriceInteger)
+      );
+
+      // Create buy tx
+      const buyTx = await dowgoERC20.connect(addr3).buy_dowgo(BUY_AMOUNT);
+
+      // wait until the transaction is mined
+      await buyTx.wait();
+    } catch (e: any) {
+      expect(e.toString()).to.equal(
+        `Error: VM Exception while processing transaction: reverted with reason string 'AccessControl: account ${addr3.address.toLowerCase()} is missing role 0x8429d542926e6695b59ac6fbdcd9b37e8b1aeb757afab06ab60b1bb5878c3b49'`
+      );
+    }
+
+    // Check that USDC supply hasn't changed
+    expect(await dowgoERC20.totalUSDCSupply()).to.equal(initialUSDCReserve);
+
+    // check for BuyDowgo Event not fired
     const eventFilter = dowgoERC20.filters.BuyDowgo(addr1.address);
     let events = await dowgoERC20.queryFilter(eventFilter);
     expect(events.length === 0).to.be.true;

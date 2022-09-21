@@ -11,18 +11,23 @@ import {
   initRatio,
   ONE_UNIT,
 } from "./test-constants";
-import { approveTransfer, setupTestEnv } from "./test-utils";
+import {
+  approveTransfer,
+  setupTestEnvDowgoERC20Whitelisted,
+} from "./test-utils";
 
 describe("DowgoERC20 - sell", function () {
   let dowgoERC20: DowgoERC20;
   let usdcERC20: ERC20;
   let dowgoAdmin: SignerWithAddress;
   let addr1: SignerWithAddress;
+  let addr3: SignerWithAddress;
   const SELL_AMOUNT = ONE_UNIT;
 
   // buy tokens before selling them
   beforeEach(async () => {
-    ({ dowgoERC20, addr1, usdcERC20, dowgoAdmin } = await setupTestEnv());
+    ({ dowgoERC20, addr1, addr3, usdcERC20, dowgoAdmin } =
+      await setupTestEnvDowgoERC20Whitelisted());
     // Approve erc20 transfer
     await approveTransfer(
       usdcERC20,
@@ -90,6 +95,47 @@ describe("DowgoERC20 - sell", function () {
     } catch (e: any) {
       expect(e.toString()).to.equal(
         `Error: VM Exception while processing transaction: reverted with reason string 'User doesn't own enough tokens to sell'`
+      );
+    }
+
+    // Check that supply of both USDC and Dowgo hasnt been changed
+    expect(await dowgoERC20.totalUSDCSupply()).to.equal(
+      initialUSDCReserve.add(SELL_AMOUNT.mul(2))
+    );
+    expect(await dowgoERC20.totalSupply()).to.equal(
+      initialDowgoSupply.add(SELL_AMOUNT)
+    );
+
+    // check for SellDowgo Event not fired
+    const eventFilter = dowgoERC20.filters.SellDowgo(addr1.address);
+    let events = await dowgoERC20.queryFilter(eventFilter);
+    expect(events.length === 0).to.be.true;
+  });
+  it("Should not let user 3 - who isn't whitelisted - sell dowgo", async function () {
+    try {
+      // First, the admin should send the tokens to the user 3
+      await approveTransfer(dowgoERC20, dowgoAdmin, addr3.address, SELL_AMOUNT);
+      const transferTx = await dowgoERC20
+        .connect(dowgoAdmin)
+        .transfer(addr3.address, SELL_AMOUNT);
+      await transferTx.wait();
+
+      // Approve erc20 transfer
+      await approveTransfer(
+        usdcERC20,
+        addr3,
+        dowgoERC20.address,
+        SELL_AMOUNT.mul(initPriceInteger)
+      );
+
+      // Create buy tx
+      const sellTx = await dowgoERC20.connect(addr3).sell_dowgo(SELL_AMOUNT);
+
+      // wait until the transaction is mined
+      await sellTx.wait();
+    } catch (e: any) {
+      expect(e.toString()).to.equal(
+        `Error: VM Exception while processing transaction: reverted with reason string 'AccessControl: account ${addr3.address.toLowerCase()} is missing role 0x8429d542926e6695b59ac6fbdcd9b37e8b1aeb757afab06ab60b1bb5878c3b49'`
       );
     }
 

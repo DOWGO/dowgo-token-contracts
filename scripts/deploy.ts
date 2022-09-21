@@ -92,7 +92,6 @@ async function main() {
   await dowgoERC20.deployed();
 
   // increase total reserve by 30 USDC, buys 1000 dowgo for the admin
-  // TODO: implement an admin_sell function to end contract
   await approveTransfer(
     usdcERC20,
     dowgoAdmin,

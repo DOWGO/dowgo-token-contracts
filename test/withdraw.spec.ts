@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { DowgoERC20, ERC20 } from "../typechain";
 import { ONE_UNIT } from "./test-constants";
-import { setupTestEnv } from "./test-utils";
+import { setupTestEnvDowgoERC20Whitelisted } from "./test-utils";
 
 describe("DowgoERC20 - withdraw", function () {
   let dowgoERC20: DowgoERC20;
@@ -12,7 +12,8 @@ describe("DowgoERC20 - withdraw", function () {
 
   // buy tokens before selling them
   beforeEach(async () => {
-    ({ dowgoERC20, addr2, usdcERC20 } = await setupTestEnv());
+    ({ dowgoERC20, addr2, usdcERC20 } =
+      await setupTestEnvDowgoERC20Whitelisted());
   });
   it("Should not let user withdraw with no balance", async function () {
     try {

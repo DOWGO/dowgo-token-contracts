@@ -7,7 +7,10 @@ import {
   initialUser1USDCBalance,
   ONE_UNIT,
 } from "./test-constants";
-import { approveTransfer, setupTestEnv } from "./test-utils";
+import {
+  approveTransfer,
+  setupTestEnvDowgoERC20Whitelisted,
+} from "./test-utils";
 
 describe("DowgoERC20 - USDC Reserve", function () {
   let dowgoERC20: DowgoERC20;
@@ -18,7 +21,7 @@ describe("DowgoERC20 - USDC Reserve", function () {
 
   beforeEach(async () => {
     ({ dowgoERC20, addr1, addr2, usdcERC20, dowgoAdmin } =
-      await setupTestEnv());
+      await setupTestEnvDowgoERC20Whitelisted());
   });
   describe("DowgoERC20 - increase_usdc_supply", function () {
     it("Should let admin address increase usdc reserve", async function () {

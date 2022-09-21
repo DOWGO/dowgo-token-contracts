@@ -4,7 +4,7 @@ import { BigNumber } from "ethers";
 import { ethers, network } from "hardhat";
 import { DowgoERC20, DowgoERC20__factory } from "../typechain";
 import { initialUSDCReserve, ONE_UNIT } from "./test-constants";
-import { setupTestEnv } from "./test-utils";
+import { setupTestEnvDowgoERC20Whitelisted } from "./test-utils";
 
 describe("DowgoERC20 - setPrice", function () {
   let dowgoERC20: DowgoERC20;
@@ -13,7 +13,8 @@ describe("DowgoERC20 - setPrice", function () {
   const newPrice = ONE_UNIT.mul(3);
 
   beforeEach(async () => {
-    ({ dowgoERC20, dowgoAdmin, addr1 } = await setupTestEnv());
+    ({ dowgoERC20, dowgoAdmin, addr1 } =
+      await setupTestEnvDowgoERC20Whitelisted());
   });
   it("Should let admin set price", async function () {
     const setPriceTx = await dowgoERC20
