@@ -42,3 +42,13 @@ export const sendUSDCToUser = async (
     .transfer(to, amount);
   await sendToUserTx.wait();
 };
+
+export const approveAndSendUSDC = async (
+  usdcERC20: ERC20,
+  usdcCreator: SignerWithAddress,
+  to: string,
+  amount: BigNumber
+) => {
+  await approveTransfer(usdcERC20, usdcCreator, to, amount);
+  await sendUSDCToUser(usdcERC20, usdcCreator, to, amount);
+};

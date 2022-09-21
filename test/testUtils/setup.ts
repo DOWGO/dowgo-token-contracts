@@ -20,7 +20,11 @@ import {
   ERC20,
   ERC20PresetFixedSupply__factory,
 } from "../../typechain";
-import { approveTransfer, sendUSDCToUser } from "./tx-utils";
+import {
+  approveAndSendUSDC,
+  approveTransfer,
+  sendUSDCToUser,
+} from "./tx-utils";
 
 export const setupTestEnvDowgoERC20Whitelisted = async () => {
   let dowgoERC20: DowgoERC20Whitelisted, usdcERC20: ERC20;
@@ -53,13 +57,7 @@ export const setupTestEnvDowgoERC20Whitelisted = async () => {
   usdcERC20 = await usdcERC20.deployed();
 
   // Send 100 USDC to user 1
-  await approveTransfer(
-    usdcERC20,
-    usdcCreator,
-    addr1.address,
-    initialUser1USDCBalance
-  );
-  await sendUSDCToUser(
+  await approveAndSendUSDC(
     usdcERC20,
     usdcCreator,
     addr1.address,
@@ -67,13 +65,7 @@ export const setupTestEnvDowgoERC20Whitelisted = async () => {
   );
 
   // Send 100 USDC to user 3
-  await approveTransfer(
-    usdcERC20,
-    usdcCreator,
-    addr3.address,
-    initialUser1USDCBalance
-  );
-  await sendUSDCToUser(
+  await approveAndSendUSDC(
     usdcERC20,
     usdcCreator,
     addr3.address,
@@ -81,13 +73,7 @@ export const setupTestEnvDowgoERC20Whitelisted = async () => {
   );
 
   // Send 2000 USDC to dowgoAdmin
-  await approveTransfer(
-    usdcERC20,
-    usdcCreator,
-    dowgoAdmin.address,
-    initialUSDCReserve
-  );
-  await sendUSDCToUser(
+  await approveAndSendUSDC(
     usdcERC20,
     usdcCreator,
     dowgoAdmin.address,
