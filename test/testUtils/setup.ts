@@ -19,15 +19,17 @@ import {
   DowgoERC20Whitelisted__factory,
   ERC20,
   ERC20PresetFixedSupply__factory,
+  ERC20PresetFixedSupply,
 } from "../../typechain";
 import {
   approveAndSendUSDC,
   approveTransfer,
+  increaseDowgoSupply,
   sendUSDCToUser,
 } from "./tx-utils";
 
 export const setupTestEnvDowgoERC20Whitelisted = async () => {
-  let dowgoERC20: DowgoERC20Whitelisted, usdcERC20: ERC20;
+  let dowgoERC20: DowgoERC20Whitelisted, usdcERC20: ERC20PresetFixedSupply;
   let dowgoAdmin: SignerWithAddress;
   let usdcCreator: SignerWithAddress;
   // user 1 and 2 will be whitelisted but not user 3
@@ -80,7 +82,7 @@ export const setupTestEnvDowgoERC20Whitelisted = async () => {
     initialUSDCReserve.mul(2)
   );
 
-  // deploy contract
+  // Deploy Dowgo ERC20 Contract
   const DowgoERC20WhitelistedFactory: DowgoERC20Whitelisted__factory =
     await ethers.getContractFactory("DowgoERC20Whitelisted");
   dowgoERC20 = await DowgoERC20WhitelistedFactory.connect(dowgoAdmin).deploy(
@@ -92,16 +94,22 @@ export const setupTestEnvDowgoERC20Whitelisted = async () => {
   await dowgoERC20.deployed();
 
   // increase total reserve by 30 USDC, buys 1000 dowgo for the admin
-  await approveTransfer(
+  await increaseDowgoSupply(
     usdcERC20,
+    dowgoERC20,
     dowgoAdmin,
-    dowgoERC20.address,
-    initialUSDCReserve
+    initialDowgoSupply
   );
-  const increaseTx = await dowgoERC20
-    .connect(dowgoAdmin)
-    .admin_buy_dowgo(initialDowgoSupply);
-  await increaseTx.wait();
+  // await approveTransfer(
+  //   usdcERC20,
+  //   dowgoAdmin,
+  //   dowgoERC20.address,
+  //   initialUSDCReserve
+  // );
+  // const increaseTx = await dowgoERC20
+  //   .connect(dowgoAdmin)
+  //   .admin_buy_dowgo(initialDowgoSupply);
+  // await increaseTx.wait();
 
   // whitelist user 1 and 2
   const whitelistUser1Tx = await dowgoERC20

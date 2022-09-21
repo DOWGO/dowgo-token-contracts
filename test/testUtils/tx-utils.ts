@@ -19,6 +19,7 @@ import {
   DowgoERC20Whitelisted__factory,
   ERC20,
   ERC20PresetFixedSupply__factory,
+  ERC20PresetFixedSupply,
 } from "../../typechain";
 
 export const approveTransfer = async (
@@ -51,4 +52,23 @@ export const approveAndSendUSDC = async (
 ) => {
   await approveTransfer(usdcERC20, usdcCreator, to, amount);
   await sendUSDCToUser(usdcERC20, usdcCreator, to, amount);
+};
+
+export const increaseDowgoSupply = async (
+  usdcERC20: ERC20PresetFixedSupply,
+  dowgoERC20: DowgoERC20Whitelisted,
+  dowgoAdmin: SignerWithAddress,
+  amount: BigNumber
+) => {
+  let price = await dowgoERC20.currentPrice();
+  await approveTransfer(
+    usdcERC20,
+    dowgoAdmin,
+    dowgoERC20.address,
+    amount.mul(price).div(ONE_UNIT).mul(initRatio).div(BigNumber.from(10000))
+  );
+  const increaseTx = await dowgoERC20
+    .connect(dowgoAdmin)
+    .admin_buy_dowgo(amount);
+  await increaseTx.wait();
 };
