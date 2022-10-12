@@ -1,15 +1,14 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
-import { DowgoERC20, DowgoERC20__factory, ERC20 } from "../typechain";
+import { DowgoERC20, ERC20 } from "../typechain";
 import {
   initialDowgoSupply,
   initialPrice,
   initialUSDCReserve,
   initialUser1USDCBalance,
-  initPriceInteger,
   initRatio,
-  ONE_UNIT,
+  ONE_DOWGO_UNIT,
 } from "./test-constants";
 import {
   approveTransfer,
@@ -22,7 +21,7 @@ describe("DowgoERC20 - sell", function () {
   let dowgoAdmin: SignerWithAddress;
   let addr1: SignerWithAddress;
   let addr3: SignerWithAddress;
-  const SELL_AMOUNT = ONE_UNIT;
+  const SELL_AMOUNT = ONE_DOWGO_UNIT;
 
   // buy tokens before selling them
   beforeEach(async () => {
@@ -100,7 +99,7 @@ describe("DowgoERC20 - sell", function () {
 
     // Check that supply of both USDC and Dowgo hasnt been changed
     expect(await dowgoERC20.totalUSDCSupply()).to.equal(
-      initialUSDCReserve.add(SELL_AMOUNT.mul(2))
+      initialUSDCReserve.add(SELL_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT))
     );
     expect(await dowgoERC20.totalSupply()).to.equal(
       initialDowgoSupply.add(SELL_AMOUNT)
@@ -125,7 +124,7 @@ describe("DowgoERC20 - sell", function () {
         usdcERC20,
         addr3,
         dowgoERC20.address,
-        SELL_AMOUNT.mul(initPriceInteger)
+        SELL_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT)
       );
 
       // Create buy tx
@@ -141,7 +140,7 @@ describe("DowgoERC20 - sell", function () {
 
     // Check that supply of both USDC and Dowgo hasnt been changed
     expect(await dowgoERC20.totalUSDCSupply()).to.equal(
-      initialUSDCReserve.add(SELL_AMOUNT.mul(2))
+      initialUSDCReserve.add(SELL_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT))
     );
     expect(await dowgoERC20.totalSupply()).to.equal(
       initialDowgoSupply.add(SELL_AMOUNT)
@@ -209,8 +208,9 @@ describe("DowgoERC20 - sell", function () {
     // wait until the transaction is mined
     await sellTx.wait();
 
-    const usdcFromAdminSell = SELL_AMOUNT_TOO_HIGH.mul(initPriceInteger)
+    const usdcFromAdminSell = SELL_AMOUNT_TOO_HIGH.mul(initialPrice)
       .mul(initRatio)
+      .div(ONE_DOWGO_UNIT)
       .div(BigNumber.from(10000));
 
     // check pending USDC balance

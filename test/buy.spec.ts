@@ -5,10 +5,10 @@ import { DowgoERC20, ERC20 } from "../typechain";
 import {
   initialDowgoSupply,
   initialUSDCReserve,
-  initPriceInteger,
-  ONE_UNIT,
   initialUser1USDCBalance,
   initRatio,
+  ONE_DOWGO_UNIT,
+  initialPrice,
 } from "./test-constants";
 import {
   approveTransfer,
@@ -22,7 +22,7 @@ describe("DowgoERC20 - buy", function () {
   let addr1: SignerWithAddress;
   let addr2: SignerWithAddress;
   let addr3: SignerWithAddress;
-  const BUY_AMOUNT = ONE_UNIT;
+  const BUY_AMOUNT = ONE_DOWGO_UNIT;
 
   beforeEach(async () => {
     ({ dowgoERC20, addr1, addr2, addr3, usdcERC20, dowgoAdmin } =
@@ -34,7 +34,7 @@ describe("DowgoERC20 - buy", function () {
       usdcERC20,
       addr1,
       dowgoERC20.address,
-      BUY_AMOUNT.mul(initPriceInteger)
+      BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT)
     );
 
     // Create buy tx
@@ -53,15 +53,15 @@ describe("DowgoERC20 - buy", function () {
 
     // check that user 1 owns 100-2=98 USDC
     expect(await usdcERC20.balanceOf(addr1.address)).to.equal(
-      initialUser1USDCBalance.sub(BUY_AMOUNT.mul(initPriceInteger))
+      initialUser1USDCBalance.sub(BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT))
     );
 
     // check that contract owns 60+2USDC
     expect(await usdcERC20.balanceOf(dowgoERC20.address)).to.equal(
-      BUY_AMOUNT.mul(initPriceInteger).add(initialUSDCReserve)
+      BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT).add(initialUSDCReserve)
     );
     expect(await dowgoERC20.totalUSDCSupply()).to.equal(
-      BUY_AMOUNT.mul(initPriceInteger).add(initialUSDCReserve)
+      BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT).add(initialUSDCReserve)
     );
 
     // check for Buy Event
@@ -78,7 +78,7 @@ describe("DowgoERC20 - buy", function () {
         usdcERC20,
         addr2,
         dowgoERC20.address,
-        BUY_AMOUNT.mul(initPriceInteger)
+        BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT)
       );
 
       // Create buy tx
@@ -107,7 +107,7 @@ describe("DowgoERC20 - buy", function () {
         usdcERC20,
         addr3,
         dowgoERC20.address,
-        BUY_AMOUNT.mul(initPriceInteger)
+        BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT)
       );
 
       // Create buy tx
@@ -137,7 +137,7 @@ describe("DowgoERC20 - buy", function () {
         usdcERC20,
         addr1,
         dowgoERC20.address,
-        BUY_AMOUNT_TOO_HIGH.mul(initPriceInteger)
+        BUY_AMOUNT_TOO_HIGH.mul(initialPrice).div(ONE_DOWGO_UNIT)
       );
 
       // Create buy tx
@@ -171,7 +171,7 @@ describe("DowgoERC20 - buy", function () {
       usdcERC20,
       dowgoAdmin,
       dowgoERC20.address,
-      BUY_AMOUNT_TOO_HIGH.mul(initPriceInteger)
+      BUY_AMOUNT_TOO_HIGH.mul(initialPrice).div(ONE_DOWGO_UNIT)
     );
 
     // Create buy tx
@@ -185,8 +185,9 @@ describe("DowgoERC20 - buy", function () {
     // check that admin owns less USDC
     expect(await usdcERC20.balanceOf(dowgoAdmin.address)).to.equal(
       initialAdminUSDCBalance.sub(
-        BUY_AMOUNT_TOO_HIGH.mul(initPriceInteger)
+        BUY_AMOUNT_TOO_HIGH.mul(initialPrice)
           .mul(initRatio)
+          .div(ONE_DOWGO_UNIT)
           .div(BigNumber.from(10000))
       ),
       "USDC amount not substracted from admin"
@@ -194,15 +195,17 @@ describe("DowgoERC20 - buy", function () {
 
     // check that contract owns 60+(8*0.03)
     expect(await usdcERC20.balanceOf(dowgoERC20.address)).to.equal(
-      BUY_AMOUNT_TOO_HIGH.mul(initPriceInteger)
+      BUY_AMOUNT_TOO_HIGH.mul(initialPrice)
         .mul(initRatio)
+        .div(ONE_DOWGO_UNIT)
         .div(BigNumber.from(10000))
         .add(initialUSDCReserve),
       "Contract doesn't own right amount of USDC"
     );
     expect(await dowgoERC20.totalUSDCSupply()).to.equal(
-      BUY_AMOUNT_TOO_HIGH.mul(initPriceInteger)
+      BUY_AMOUNT_TOO_HIGH.mul(initialPrice)
         .mul(initRatio)
+        .div(ONE_DOWGO_UNIT)
         .div(BigNumber.from(10000))
         .add(initialUSDCReserve),
       "Contract doesn't own right amount of USDC"

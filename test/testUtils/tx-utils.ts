@@ -1,15 +1,10 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
-import { ethers, network } from "hardhat";
-import { ONE_UNIT } from "../test-constants";
+import { ONE_USDC_UNIT } from "../test-constants";
 
 import {
-  DowgoERC20,
   DowgoERC20Whitelisted,
-  DowgoERC20__factory,
-  DowgoERC20Whitelisted__factory,
   ERC20,
-  ERC20PresetFixedSupply__factory,
   ERC20PresetFixedSupply,
 } from "../../typechain";
 
@@ -57,7 +52,7 @@ export const increaseDowgoSupply = async (
     usdcERC20,
     dowgoAdmin,
     dowgoERC20.address,
-    amount.mul(price).div(ONE_UNIT).mul(initRatio).div(BigNumber.from(10000))
+    amount.mul(price).mul(initRatio).div(ONE_USDC_UNIT).div(BigNumber.from(10000))
   );
   const increaseTx = await dowgoERC20
     .connect(dowgoAdmin)

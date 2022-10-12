@@ -2,7 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { DowgoERC20, ERC20 } from "../typechain";
-import { ONE_UNIT } from "./test-constants";
+import { ONE_USDC_UNIT } from "./test-constants";
 import { setupTestEnvDowgoERC20Whitelisted } from "./testUtils/setup";
 
 describe("DowgoERC20 - withdraw", function () {
@@ -19,7 +19,7 @@ describe("DowgoERC20 - withdraw", function () {
     try {
       const decreaseTx = await dowgoERC20
         .connect(addr2)
-        .withdraw_usdc(ONE_UNIT);
+        .withdraw_usdc(ONE_USDC_UNIT);
 
       // wait until the transaction is mined
       await decreaseTx.wait();

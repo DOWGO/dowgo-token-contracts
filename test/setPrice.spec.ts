@@ -1,16 +1,15 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
-import { ethers, network } from "hardhat";
-import { DowgoERC20, DowgoERC20__factory } from "../typechain";
-import { initialUSDCReserve, ONE_UNIT } from "./test-constants";
+import { DowgoERC20 } from "../typechain";
+import { initialUSDCReserve, ONE_USDC_UNIT } from "./test-constants";
 import { setupTestEnvDowgoERC20Whitelisted } from "./testUtils/setup";
 
 describe("DowgoERC20 - setPrice", function () {
   let dowgoERC20: DowgoERC20;
   let dowgoAdmin: SignerWithAddress;
   let addr1: SignerWithAddress;
-  const newPrice = ONE_UNIT.mul(3);
+  const newPrice = ONE_USDC_UNIT.mul(3);
 
   beforeEach(async () => {
     ({ dowgoERC20, dowgoAdmin, addr1 } =

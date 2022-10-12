@@ -1,5 +1,4 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumber } from "ethers";
 import { ethers, network } from "hardhat";
 import {
   collRange,
@@ -9,7 +8,6 @@ import {
   initialUser1USDCBalance,
   initRatio,
   mockUSDCSupply,
-  ONE_UNIT,
 } from "../test-constants";
 
 import {
@@ -25,7 +23,6 @@ import {
   approveAndSendUSDC,
   approveTransfer,
   increaseDowgoSupply,
-  sendUSDCToUser,
   whitelistUser,
 } from "./tx-utils";
 

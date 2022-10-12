@@ -21,7 +21,7 @@ contract DowgoERC20Whitelisted is ERC20, AccessControl {
   // USDC Balances of all token owners
   mapping(address => uint256) public usdcUserBalances;
 
-  // Price in USDC-wei/Dowgo
+  // Price in USDC/Dowgo - same deciamls as USDC reserve
   uint256 public currentPrice;
 
   // Min collateral ratio out of total AUM. Should be 3%, is a number out of 10k (so 300 for 3%)
@@ -108,9 +108,9 @@ contract DowgoERC20Whitelisted is ERC20, AccessControl {
     uint256 _initialPrice,
     uint16 _targetRatio,
     uint16 _collRange,
-    address usdcTokenAddress
+    address _usdcTokenAddress
   ) ERC20("Dowgo", "DWG") {
-    usdcToken = IERC20(usdcTokenAddress);
+    usdcToken = IERC20(_usdcTokenAddress);
     currentPrice = _initialPrice;
     targetRatio = _targetRatio;
     collRange = _collRange;
@@ -157,9 +157,9 @@ contract DowgoERC20Whitelisted is ERC20, AccessControl {
     uint256 targetUSDCCollateral = totalSupply()
       .add(dowgoAmount)
       .mul(currentPrice)
-      .div(10**18)
       .mul(targetRatio)
-      .div(10**4);
+      .div(10**18) // div for dowgoAmount
+      .div(10**4); // div for targetRatio
     require(
       totalUSDCSupply.add(usdcAmount) <
         targetUSDCCollateral.mul(collRange).div(10**4).add(
@@ -201,9 +201,9 @@ contract DowgoERC20Whitelisted is ERC20, AccessControl {
     // USDC Amount is targetRatio % of real amount because the admin will increase USDC balance (and buy stocks) in FTX directly
     uint256 usdcAmount = dowgoAmount
       .mul(currentPrice)
-      .div(10**18)
       .mul(targetRatio)
-      .div(10**4);
+      .div(10**18) // div for dowgoAmount
+      .div(10**4); // div for targetRatio
 
     // Check that the user has enough USDC allowance on the contract
     require(
@@ -236,9 +236,9 @@ contract DowgoERC20Whitelisted is ERC20, AccessControl {
     uint256 targetUSDCCollateral = totalSupply()
       .sub(dowgoAmount)
       .mul(currentPrice)
-      .div(10**18)
       .mul(targetRatio)
-      .div(10**4);
+      .div(10**18) // div for dowgoAmount
+      .div(10**4); // div for targetRatio
     require(
       totalUSDCSupply.sub(usdcAmount) >
         targetUSDCCollateral.sub(
@@ -267,9 +267,9 @@ contract DowgoERC20Whitelisted is ERC20, AccessControl {
     // USDC Amount is targetRatio % of real amount because the admin will sell stocks in FTX directly
     uint256 usdcAmount = dowgoAmount
       .mul(currentPrice)
-      .div(10**18)
       .mul(targetRatio)
-      .div(10**4);
+      .div(10**18) // div for dowgoAmount
+      .div(10**4); // div for targetRatio
 
 
     // Check that the user owns enough tokens
@@ -330,9 +330,9 @@ contract DowgoERC20Whitelisted is ERC20, AccessControl {
     // Check that this action won't let the collateral drop under target minus collRange
     uint256 targetUSDCCollateral = totalSupply()
       .mul(currentPrice)
-      .div(10**18)
       .mul(targetRatio)
-      .div(10**4);
+      .div(10**18) // div for dowgoAmount
+      .div(10**4); // div for targetRatio
     require(
       totalUSDCSupply.sub(usdcAmount) >=
         targetUSDCCollateral.sub(
