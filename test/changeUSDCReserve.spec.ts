@@ -13,7 +13,7 @@ import {
   setupTestEnvDowgoERC20Whitelisted,
 } from "./testUtils";
 
-const testUSDCAmount=ONE_USDC_UNIT
+const testUSDCAmount = ONE_USDC_UNIT;
 
 describe("DowgoERC20 - USDC Reserve", function () {
   let dowgoERC20: DowgoERC20;
@@ -67,7 +67,12 @@ describe("DowgoERC20 - USDC Reserve", function () {
     });
     it("Should not let non-admin address increase usdc reserve", async function () {
       try {
-        await approveTransfer(usdcERC20, addr1, dowgoERC20.address, testUSDCAmount);
+        await approveTransfer(
+          usdcERC20,
+          addr1,
+          dowgoERC20.address,
+          testUSDCAmount
+        );
         const increaseTx = await dowgoERC20
           .connect(addr1)
           .increase_usdc_supply(testUSDCAmount);

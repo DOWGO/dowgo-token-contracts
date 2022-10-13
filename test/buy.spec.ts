@@ -53,7 +53,56 @@ describe("DowgoERC20 - buy", function () {
 
     // check that user 1 owns 100-2=98 USDC
     expect(await usdcERC20.balanceOf(addr1.address)).to.equal(
-      initialUser1USDCBalance.sub(BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT))
+      initialUser1USDCBalance.sub(
+        BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT)
+      )
+    );
+
+    // check that contract owns 60+2USDC
+    expect(await usdcERC20.balanceOf(dowgoERC20.address)).to.equal(
+      BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT).add(initialUSDCReserve)
+    );
+    expect(await dowgoERC20.totalUSDCSupply()).to.equal(
+      BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT).add(initialUSDCReserve)
+    );
+
+    // check for Buy Event
+    const eventFilter2 = dowgoERC20.filters.BuyDowgo(addr1.address);
+    let events2 = await dowgoERC20.queryFilter(eventFilter2);
+    expect(events2[0] && events2[0].args[1] && events2[0].args[1]).to.equal(
+      BUY_AMOUNT
+    );
+  });
+  it("Should let first address buy dowgo token against usdc INFINITE ALLOWANCE", async function () {
+    const INFINITE_ALLOWANCE =
+      "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+    // Approve erc20 transfer
+    await approveTransfer(
+      usdcERC20,
+      addr1,
+      dowgoERC20.address,
+      BigNumber.from(INFINITE_ALLOWANCE)
+    );
+
+    // Create buy tx
+    const buyTx = await dowgoERC20.connect(addr1).buy_dowgo(BUY_AMOUNT);
+
+    // wait until the transaction is mined
+    await buyTx.wait();
+
+    // check for user 1 dowgo balabnce
+    expect(await dowgoERC20.balanceOf(addr1.address)).to.equal(BUY_AMOUNT);
+
+    // check for totalSupply
+    expect(await dowgoERC20.totalSupply()).to.equal(
+      BUY_AMOUNT.add(initialDowgoSupply)
+    );
+
+    // check that user 1 owns 100-2=98 USDC
+    expect(await usdcERC20.balanceOf(addr1.address)).to.equal(
+      initialUser1USDCBalance.sub(
+        BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT)
+      )
     );
 
     // check that contract owns 60+2USDC

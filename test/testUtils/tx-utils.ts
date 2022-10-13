@@ -52,7 +52,11 @@ export const increaseDowgoSupply = async (
     usdcERC20,
     dowgoAdmin,
     dowgoERC20.address,
-    amount.mul(price).mul(initRatio).div(ONE_USDC_UNIT).div(BigNumber.from(10000))
+    amount
+      .mul(price)
+      .mul(initRatio)
+      .div(ONE_USDC_UNIT)
+      .div(BigNumber.from(10000))
   );
   const increaseTx = await dowgoERC20
     .connect(dowgoAdmin)
