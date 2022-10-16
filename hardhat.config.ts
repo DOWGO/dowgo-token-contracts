@@ -33,7 +33,7 @@ const testPrivKey3 =
   "0x1f85725e6dd3a7c98141c8593b20bf138f28571bebf6bebe059324046a3bcdf3";
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.4",
+  solidity: "0.8.17",
   networks: {
     local: {
       url: "localhost:8545",
