@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import "hardhat/console.sol"; //TODO: get rid of this in prod
 
-contract DowgoERC20 is ERC20, AccessControl {
+contract DowgoERC20NoWhitelist is ERC20, AccessControl {
   using SafeMath for uint256;
 
   // USDC token instance
