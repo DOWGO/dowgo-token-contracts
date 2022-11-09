@@ -79,7 +79,7 @@ describe("DowgoERC20 - sell", function () {
       BigNumber.from(0)
     );
 
-    // check that user 1 is back to owning 100 USDC minus fee
+    // check that user 1 is back to owning 100 USDC minus fee or buygin in the first place
     expect(await usdcERC20.balanceOf(addr1.address)).to.equal(
       initialUser1USDCBalance.sub(USDC_FEE)
     );

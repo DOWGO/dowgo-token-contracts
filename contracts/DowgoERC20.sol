@@ -92,6 +92,13 @@ contract DowgoERC20 is ERC20, AccessControl {
   event WithdrawUSDC(address indexed user, uint256 amount);
 
   /**
+   * @dev Emitted when admin withdraws USDC from Treasury
+   *
+   * Note that `value` may be zero.
+   */
+  event WithdrawUSDCTreasury(address indexed user, uint256 amount);
+
+  /**
    * @dev Emitted when the admin increases the USDC supply to reflect the stock market's evolution
    *
    * Note that `value` may be zero.
@@ -313,8 +320,9 @@ contract DowgoERC20 is ERC20, AccessControl {
       "User doesn't have that much USDC credit"
     );
 
+    /// Check that contract owns enough USDC, this should never error
     uint256 totalUsdcBalance = usdcToken.balanceOf(address(this));
-    assert(usdcAmount <= totalUsdcBalance); ///this shuold never error
+    assert(usdcAmount <= totalUsdcBalance);
 
     /// Substract User balance
     usdcUserBalances[msg.sender] = usdcUserBalances[msg.sender].sub(usdcAmount);
@@ -323,6 +331,27 @@ contract DowgoERC20 is ERC20, AccessControl {
     bool sent = usdcToken.transfer(msg.sender, usdcAmount);
     require(sent, "Failed to withdraw USDC to user"); ///TODO: test this with mock usdc
     emit WithdrawUSDC(msg.sender, usdcAmount);
+  }
+
+  /// Withdraw USDC from Admin treasury (from fees)
+  function withdraw_treasury(uint256 usdcAmount) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    /// Check that the treasury has enough USDC on the smart contract
+    require(
+      usdcAmount <= adminTreasury,
+      "Treasury doesn't have that much USDC"
+    );
+
+    /// Check that contract owns enough USDC, this should never error
+    uint256 totalUsdcBalance = usdcToken.balanceOf(address(this));
+    assert(usdcAmount <= totalUsdcBalance);
+
+    /// Substract Amount from Treasury
+   adminTreasury = adminTreasury.sub(usdcAmount);
+
+    ///interactions ///TODO: check return value?
+    bool sent = usdcToken.transfer(msg.sender, usdcAmount);
+    require(sent, "Failed to withdraw USDC treasury to admin"); ///TODO: test this with mock usdc
+    emit WithdrawUSDCTreasury(msg.sender, usdcAmount);
   }
 
   /// Increase USDC reserve of the contract
