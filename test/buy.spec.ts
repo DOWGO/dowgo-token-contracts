@@ -9,11 +9,9 @@ import {
   initRatio,
   ONE_DOWGO_UNIT,
   initialPrice,
+  transactionFee,
 } from "./test-constants";
-import {
-  approveTransfer,
-  setupTestEnvDowgoERC20Whitelisted,
-} from "./testUtils";
+import { approveTransfer, setupTestEnvDowgoERC20 } from "./testUtils";
 
 describe("DowgoERC20 - buy", function () {
   let dowgoERC20: DowgoERC20;
@@ -23,10 +21,14 @@ describe("DowgoERC20 - buy", function () {
   let addr2: SignerWithAddress;
   let addr3: SignerWithAddress;
   const BUY_AMOUNT = ONE_DOWGO_UNIT;
+  // Cost of buying dowgo with fee
+  const USDC_COST_NO_FEE = BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT);
+  const USDC_FEE = USDC_COST_NO_FEE.mul(transactionFee).div(10000);
+  const TOTAL_USDC_COST = USDC_COST_NO_FEE.add(USDC_FEE);
 
   beforeEach(async () => {
     ({ dowgoERC20, addr1, addr2, addr3, usdcERC20, dowgoAdmin } =
-      await setupTestEnvDowgoERC20Whitelisted());
+      await setupTestEnvDowgoERC20());
   });
   it("Should let first address buy dowgo token against usdc", async function () {
     // Approve erc20 transfer
@@ -34,7 +36,7 @@ describe("DowgoERC20 - buy", function () {
       usdcERC20,
       addr1,
       dowgoERC20.address,
-      BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT)
+      TOTAL_USDC_COST
     );
 
     // Create buy tx
@@ -53,17 +55,15 @@ describe("DowgoERC20 - buy", function () {
 
     // check that user 1 owns 100-2=98 USDC
     expect(await usdcERC20.balanceOf(addr1.address)).to.equal(
-      initialUser1USDCBalance.sub(
-        BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT)
-      )
+      initialUser1USDCBalance.sub(TOTAL_USDC_COST)
     );
 
     // check that contract owns 60+2USDC
     expect(await usdcERC20.balanceOf(dowgoERC20.address)).to.equal(
-      BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT).add(initialUSDCReserve)
+      TOTAL_USDC_COST.add(initialUSDCReserve)
     );
     expect(await dowgoERC20.totalUSDCReserve()).to.equal(
-      BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT).add(initialUSDCReserve)
+      USDC_COST_NO_FEE.add(initialUSDCReserve)
     );
 
     // check for Buy Event
@@ -100,17 +100,15 @@ describe("DowgoERC20 - buy", function () {
 
     // check that user 1 owns 100-2=98 USDC
     expect(await usdcERC20.balanceOf(addr1.address)).to.equal(
-      initialUser1USDCBalance.sub(
-        BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT)
-      )
+      initialUser1USDCBalance.sub(TOTAL_USDC_COST)
     );
 
     // check that contract owns 60+2USDC
     expect(await usdcERC20.balanceOf(dowgoERC20.address)).to.equal(
-      BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT).add(initialUSDCReserve)
+      TOTAL_USDC_COST.add(initialUSDCReserve)
     );
     expect(await dowgoERC20.totalUSDCReserve()).to.equal(
-      BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT).add(initialUSDCReserve)
+      USDC_COST_NO_FEE.add(initialUSDCReserve)
     );
 
     // check for Buy Event
@@ -127,7 +125,7 @@ describe("DowgoERC20 - buy", function () {
         usdcERC20,
         addr2,
         dowgoERC20.address,
-        BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT)
+        TOTAL_USDC_COST
       );
 
       // Create buy tx
@@ -156,7 +154,7 @@ describe("DowgoERC20 - buy", function () {
         usdcERC20,
         addr3,
         dowgoERC20.address,
-        BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT)
+        TOTAL_USDC_COST
       );
 
       // Create buy tx

@@ -1,5 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
+import { BigNumber } from "ethers";
 import { DowgoERC20, ERC20 } from "../typechain";
 import {
   collRange,
@@ -8,8 +9,10 @@ import {
   initialUSDCReserve,
   initialUser1USDCBalance,
   initRatio,
+  managementFee,
+  transactionFee,
 } from "./test-constants";
-import { setupTestEnvDowgoERC20Whitelisted } from "./testUtils/setup";
+import { setupTestEnvDowgoERC20 } from "./testUtils/setup";
 
 describe("DowgoERC20 - init", function () {
   let dowgoERC20: DowgoERC20, usdcERC20: ERC20;
@@ -19,14 +22,17 @@ describe("DowgoERC20 - init", function () {
 
   beforeEach(async () => {
     ({ dowgoERC20, usdcERC20, addr1, addr3, dowgoAdmin } =
-      await setupTestEnvDowgoERC20Whitelisted());
+      await setupTestEnvDowgoERC20());
   });
   it("Should check that deployement was successful with right initial amount", async function () {
     expect(await dowgoERC20.totalSupply()).to.equal(initialDowgoSupply);
     expect(await dowgoERC20.totalUSDCReserve()).to.equal(initialUSDCReserve);
+    expect(await dowgoERC20.adminTreasury()).to.equal(BigNumber.from(0));
     expect(await dowgoERC20.currentPrice()).to.equal(initialPrice);
     expect(await dowgoERC20.targetRatio()).to.equal(initRatio);
     expect(await dowgoERC20.collRange()).to.equal(collRange);
+    expect(await dowgoERC20.transactionFee()).to.equal(transactionFee);
+    expect(await dowgoERC20.managementFee()).to.equal(managementFee);
   });
   it("Should check that first address has 100 USDC", async function () {
     // check that user 1 owns 100 USDC

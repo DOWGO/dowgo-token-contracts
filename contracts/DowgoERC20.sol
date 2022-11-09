@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-contract DowgoERC20Whitelisted is ERC20, AccessControl {
+contract DowgoERC20 is ERC20, AccessControl {
   using SafeMath for uint256;
 
   /// USDC token instance
@@ -17,6 +17,15 @@ contract DowgoERC20Whitelisted is ERC20, AccessControl {
 
   /// USDC Balances of all token owners
   mapping(address => uint256) public usdcUserBalances;
+
+  //// USDC treasury of admin in the contract (coming from fees)
+  uint256 public adminTreasury;
+
+  /// Transaction fee - % (out of 10k), every time a user mints/buys dowgo
+  uint16 public transactionFee;
+
+  /// Management fee - % (out of 10^9), monthly on the total usdc reserve
+  uint32 public managementFee;
 
   /// Price in USDC/Dowgo - same deciamls as USDC reserve
   uint256 public currentPrice;
@@ -105,12 +114,16 @@ contract DowgoERC20Whitelisted is ERC20, AccessControl {
     uint256 _initialPrice,
     uint16 _targetRatio,
     uint16 _collRange,
-    address _usdcTokenAddress
+    address _usdcTokenAddress,
+    uint16 _transactionFee,
+    uint32 _managementFee
   ) ERC20("Dowgo", "DWG") {
     usdcToken = IERC20(_usdcTokenAddress);
     currentPrice = _initialPrice;
     targetRatio = _targetRatio;
     collRange = _collRange;
+    transactionFee=_transactionFee;
+    managementFee=_managementFee;
     _setupRole(WHITELISTED_ROLE, msg.sender);
     _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
   }
@@ -145,10 +158,13 @@ contract DowgoERC20Whitelisted is ERC20, AccessControl {
     return usdcToken.allowance(msg.sender, address(this));
   }
 
-  /// Buy Dowgo tokens by sending enough USDC
+  /// Buy Dowgo tokens by sending enough USDC : price + transaction fee
   function buy_dowgo(uint256 dowgoAmount) public onlyRole(WHITELISTED_ROLE) returns (bool) {
     /// USDC amount for the desired dowgo amount
     uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18);
+
+    /// USDC fee for the desired dowgo amount
+    uint256 usdcFee = usdcAmount.mul(transactionFee).div(10**4);
 
     /// Check buying dowgo won't let the collateral ratio go above target+collRange
     uint256 targetUSDCCollateral = totalSupply()
@@ -174,9 +190,12 @@ contract DowgoERC20Whitelisted is ERC20, AccessControl {
     /// Add USDC to the total reserve
     totalUSDCReserve = totalUSDCReserve.add(usdcAmount);
 
+    /// Add USDC fee to the admin treasury
+    adminTreasury = adminTreasury.add(usdcFee);
+
     /// Interactions
     /// Send USDC to this contract
-    bool sent = usdcToken.transferFrom(msg.sender, address(this), usdcAmount);
+    bool sent = usdcToken.transferFrom(msg.sender, address(this), usdcAmount.add(usdcFee));
     require(sent, "Failed to transfer USDC from user to dowgo smart contract"); ///TODO: test this with moch usdc
 
     /// Mint new dowgo tokens
