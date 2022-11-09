@@ -98,7 +98,7 @@ describe("DowgoERC20 - sell", function () {
     }
 
     // Check that supply of both USDC and Dowgo hasnt been changed
-    expect(await dowgoERC20.totalUSDCSupply()).to.equal(
+    expect(await dowgoERC20.totalUSDCReserve()).to.equal(
       initialUSDCReserve.add(SELL_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT))
     );
     expect(await dowgoERC20.totalSupply()).to.equal(
@@ -139,7 +139,7 @@ describe("DowgoERC20 - sell", function () {
     }
 
     // Check that supply of both USDC and Dowgo hasnt been changed
-    expect(await dowgoERC20.totalUSDCSupply()).to.equal(
+    expect(await dowgoERC20.totalUSDCReserve()).to.equal(
       initialUSDCReserve.add(SELL_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT))
     );
     expect(await dowgoERC20.totalSupply()).to.equal(
@@ -154,7 +154,7 @@ describe("DowgoERC20 - sell", function () {
   it("Should not let user 1 sell too much tokens (more than 3%*10%=0.3% of total supply =3DWG)", async function () {
     const SELL_AMOUNT_TOO_HIGH = SELL_AMOUNT.mul(10);
 
-    const usdcReserveBefore = await dowgoERC20.totalUSDCSupply();
+    const usdcReserveBefore = await dowgoERC20.totalUSDCReserve();
     const dowgoSupplyBefore = await dowgoERC20.totalSupply();
 
     // First, the admin should send the tokens to the user
@@ -185,7 +185,7 @@ describe("DowgoERC20 - sell", function () {
     }
 
     // Check that supply of both USDC and Dowgo hasnt been changed
-    expect(await dowgoERC20.totalUSDCSupply()).to.equal(usdcReserveBefore);
+    expect(await dowgoERC20.totalUSDCReserve()).to.equal(usdcReserveBefore);
     expect(await dowgoERC20.totalSupply()).to.equal(dowgoSupplyBefore);
 
     // check for SellDowgo Event not fired
@@ -235,7 +235,7 @@ describe("DowgoERC20 - sell", function () {
       initialContractUSDCBalance.sub(usdcFromAdminSell),
       "Contract doesn't own right amount of USDC"
     );
-    expect(await dowgoERC20.totalUSDCSupply()).to.equal(
+    expect(await dowgoERC20.totalUSDCReserve()).to.equal(
       initialContractUSDCBalance.sub(usdcFromAdminSell),
       "Contract doesn't own right amount of USDC"
     );

@@ -62,7 +62,7 @@ describe("DowgoERC20 - buy", function () {
     expect(await usdcERC20.balanceOf(dowgoERC20.address)).to.equal(
       BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT).add(initialUSDCReserve)
     );
-    expect(await dowgoERC20.totalUSDCSupply()).to.equal(
+    expect(await dowgoERC20.totalUSDCReserve()).to.equal(
       BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT).add(initialUSDCReserve)
     );
 
@@ -109,7 +109,7 @@ describe("DowgoERC20 - buy", function () {
     expect(await usdcERC20.balanceOf(dowgoERC20.address)).to.equal(
       BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT).add(initialUSDCReserve)
     );
-    expect(await dowgoERC20.totalUSDCSupply()).to.equal(
+    expect(await dowgoERC20.totalUSDCReserve()).to.equal(
       BUY_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT).add(initialUSDCReserve)
     );
 
@@ -142,7 +142,7 @@ describe("DowgoERC20 - buy", function () {
     }
 
     // Check that price has NOT been set
-    expect(await dowgoERC20.totalUSDCSupply()).to.equal(initialUSDCReserve);
+    expect(await dowgoERC20.totalUSDCReserve()).to.equal(initialUSDCReserve);
 
     // check for PriceSet Event not fired
     const eventFilter = dowgoERC20.filters.BuyDowgo(addr1.address);
@@ -171,7 +171,7 @@ describe("DowgoERC20 - buy", function () {
     }
 
     // Check that USDC supply hasn't changed
-    expect(await dowgoERC20.totalUSDCSupply()).to.equal(initialUSDCReserve);
+    expect(await dowgoERC20.totalUSDCReserve()).to.equal(initialUSDCReserve);
 
     // check for BuyDowgo Event not fired
     const eventFilter = dowgoERC20.filters.BuyDowgo(addr1.address);
@@ -203,7 +203,7 @@ describe("DowgoERC20 - buy", function () {
     }
 
     // Check that supply of both USDC and Dowgo hasnt been changed
-    expect(await dowgoERC20.totalUSDCSupply()).to.equal(initialUSDCReserve);
+    expect(await dowgoERC20.totalUSDCReserve()).to.equal(initialUSDCReserve);
     expect(await dowgoERC20.totalSupply()).to.equal(initialDowgoSupply);
 
     // check for BuyDowgo Event not fired
@@ -251,7 +251,7 @@ describe("DowgoERC20 - buy", function () {
         .add(initialUSDCReserve),
       "Contract doesn't own right amount of USDC"
     );
-    expect(await dowgoERC20.totalUSDCSupply()).to.equal(
+    expect(await dowgoERC20.totalUSDCReserve()).to.equal(
       BUY_AMOUNT_TOO_HIGH.mul(initialPrice)
         .mul(initRatio)
         .div(ONE_DOWGO_UNIT)

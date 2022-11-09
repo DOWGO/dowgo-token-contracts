@@ -48,7 +48,7 @@ describe("DowgoERC20 - setPrice", function () {
     }
 
     // Check that price has NOT been set
-    expect(await dowgoERC20.totalUSDCSupply()).to.equal(initialUSDCReserve);
+    expect(await dowgoERC20.totalUSDCReserve()).to.equal(initialUSDCReserve);
 
     // check for PriceSet Event not fired
     const eventFilter = dowgoERC20.filters.PriceSet(addr1.address);
@@ -70,7 +70,7 @@ describe("DowgoERC20 - setPrice", function () {
     }
 
     // Check that price has NOT been set
-    expect(await dowgoERC20.totalUSDCSupply()).to.equal(initialUSDCReserve);
+    expect(await dowgoERC20.totalUSDCReserve()).to.equal(initialUSDCReserve);
 
     // check for PriceSet Event not fired
     const eventFilter = dowgoERC20.filters.PriceSet(addr1.address);

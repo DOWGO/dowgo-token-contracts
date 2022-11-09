@@ -23,7 +23,7 @@ describe("DowgoERC20 - init", function () {
   });
   it("Should check that deployement was successful with right initial amount", async function () {
     expect(await dowgoERC20.totalSupply()).to.equal(initialDowgoSupply);
-    expect(await dowgoERC20.totalUSDCSupply()).to.equal(initialUSDCReserve);
+    expect(await dowgoERC20.totalUSDCReserve()).to.equal(initialUSDCReserve);
     expect(await dowgoERC20.currentPrice()).to.equal(initialPrice);
     expect(await dowgoERC20.targetRatio()).to.equal(initRatio);
     expect(await dowgoERC20.collRange()).to.equal(collRange);

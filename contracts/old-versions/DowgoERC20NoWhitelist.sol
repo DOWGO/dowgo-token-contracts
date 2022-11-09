@@ -16,7 +16,7 @@ contract DowgoERC20NoWhitelist is ERC20, AccessControl {
   IERC20 usdcToken;
 
   /// Total supply of USDC in the contract
-  uint256 public totalUSDCSupply;
+  uint256 public totalUSDCReserve;
 
   // USDC Balances of all token owners
   mapping(address => uint256) public usdcUserBalances;
@@ -142,7 +142,7 @@ contract DowgoERC20NoWhitelist is ERC20, AccessControl {
       .mul(targetRatio)
       .div(10**4);
     require(
-      totalUSDCSupply.add(usdcAmount) <
+      totalUSDCReserve.add(usdcAmount) <
         targetUSDCCollateral.mul(collRange).div(10**4).add(
           targetUSDCCollateral
         ),
@@ -156,7 +156,7 @@ contract DowgoERC20NoWhitelist is ERC20, AccessControl {
     );
 
     // Add USDC to the total reserve
-    totalUSDCSupply = totalUSDCSupply.add(usdcAmount);
+    totalUSDCReserve = totalUSDCReserve.add(usdcAmount);
 
     // Interactions
     // Send USDC to this contract
@@ -193,7 +193,7 @@ contract DowgoERC20NoWhitelist is ERC20, AccessControl {
     );
 
     // Add USDC to the total reserve
-    totalUSDCSupply = totalUSDCSupply.add(usdcAmount);
+    totalUSDCReserve = totalUSDCReserve.add(usdcAmount);
 
     // Interactions
     // Send USDC to this contract
@@ -221,7 +221,7 @@ contract DowgoERC20NoWhitelist is ERC20, AccessControl {
       .mul(targetRatio)
       .div(10**4);
     require(
-      totalUSDCSupply.sub(usdcAmount) >
+      totalUSDCReserve.sub(usdcAmount) >
         targetUSDCCollateral.sub(
           targetUSDCCollateral.mul(collRange).div(10**4)
         ),
@@ -229,10 +229,10 @@ contract DowgoERC20NoWhitelist is ERC20, AccessControl {
     );
 
     //this should never happen, hence the assert
-    assert(totalUSDCSupply >= usdcAmount);
+    assert(totalUSDCReserve >= usdcAmount);
 
     // Transfer USDC from the reserve to the user USDC balance
-    totalUSDCSupply = totalUSDCSupply.sub(usdcAmount);
+    totalUSDCReserve = totalUSDCReserve.sub(usdcAmount);
     usdcUserBalances[msg.sender] = usdcUserBalances[msg.sender].add(usdcAmount);
 
     // Interactions
@@ -257,7 +257,7 @@ contract DowgoERC20NoWhitelist is ERC20, AccessControl {
     require(balanceOf(msg.sender) >= dowgoAmount, "Admin doesn't own enough tokens to sell");
 
     // Transfer USDC from the reserve to the user USDC balance
-    totalUSDCSupply = totalUSDCSupply.sub(usdcAmount);
+    totalUSDCReserve = totalUSDCReserve.sub(usdcAmount);
     usdcUserBalances[msg.sender] = usdcUserBalances[msg.sender].add(usdcAmount);
 
     //interactions
@@ -288,13 +288,13 @@ contract DowgoERC20NoWhitelist is ERC20, AccessControl {
   }
 
   // Increase USDC reserve of the contract
-  function increase_usdc_supply(uint256 usdcAmount)
+  function increase_usdc_reserve(uint256 usdcAmount)
     public
     onlyRole(DEFAULT_ADMIN_ROLE)
   {
     // Effect
     // Add Eth to the total reserve
-    totalUSDCSupply = totalUSDCSupply.add(usdcAmount);
+    totalUSDCReserve = totalUSDCReserve.add(usdcAmount);
 
     //Interation
     // Send USDC to this contract
@@ -304,7 +304,7 @@ contract DowgoERC20NoWhitelist is ERC20, AccessControl {
   }
 
   // Increase USDC reserve of the contract
-  function decrease_usdc_supply(uint256 usdcAmount)
+  function decrease_usdc_reserve(uint256 usdcAmount)
     public
     onlyRole(DEFAULT_ADMIN_ROLE)
   {
@@ -315,7 +315,7 @@ contract DowgoERC20NoWhitelist is ERC20, AccessControl {
       .mul(targetRatio)
       .div(10**4);
     require(
-      totalUSDCSupply.sub(usdcAmount) >=
+      totalUSDCReserve.sub(usdcAmount) >=
         targetUSDCCollateral.sub(
           targetUSDCCollateral.mul(collRange).div(10**4)
         ),
@@ -323,7 +323,7 @@ contract DowgoERC20NoWhitelist is ERC20, AccessControl {
     );
 
     // Remove USDC from the total reserve
-    totalUSDCSupply = totalUSDCSupply.sub(usdcAmount);
+    totalUSDCReserve = totalUSDCReserve.sub(usdcAmount);
     usdcUserBalances[msg.sender] = usdcUserBalances[msg.sender].add(usdcAmount);
 
     emit USDCSupplyDecreased(msg.sender, usdcAmount);
