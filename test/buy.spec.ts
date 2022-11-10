@@ -65,9 +65,7 @@ describe("DowgoERC20 - buy", function () {
     expect(await dowgoERC20.totalUSDCReserve()).to.equal(
       USDC_COST_NO_FEE.add(initialUSDCReserve)
     );
-    expect(await dowgoERC20.adminTreasury()).to.equal(
-      USDC_FEE
-    );
+    expect(await dowgoERC20.adminTreasury()).to.equal(USDC_FEE);
 
     // check for Buy Event
     const eventFilter2 = dowgoERC20.filters.BuyDowgo(addr1.address);
@@ -113,9 +111,7 @@ describe("DowgoERC20 - buy", function () {
     expect(await dowgoERC20.totalUSDCReserve()).to.equal(
       USDC_COST_NO_FEE.add(initialUSDCReserve)
     );
-    expect(await dowgoERC20.adminTreasury()).to.equal(
-      USDC_FEE
-    );
+    expect(await dowgoERC20.adminTreasury()).to.equal(USDC_FEE);
 
     // check for Buy Event
     const eventFilter2 = dowgoERC20.filters.BuyDowgo(addr1.address);
@@ -145,13 +141,13 @@ describe("DowgoERC20 - buy", function () {
       );
     }
     // check for user 2 dowgo balabnce
-    expect(await dowgoERC20.balanceOf(addr2.address)).to.equal(BigNumber.from(0));
+    expect(await dowgoERC20.balanceOf(addr2.address)).to.equal(
+      BigNumber.from(0)
+    );
 
     // Check that USDC haven't been sent
     expect(await dowgoERC20.totalUSDCReserve()).to.equal(initialUSDCReserve);
-    expect(await dowgoERC20.adminTreasury()).to.equal(
-      BigNumber.from(0)
-    );
+    expect(await dowgoERC20.adminTreasury()).to.equal(BigNumber.from(0));
 
     // check for PriceSet Event not fired
     const eventFilter = dowgoERC20.filters.BuyDowgo(addr1.address);
@@ -179,13 +175,13 @@ describe("DowgoERC20 - buy", function () {
       );
     }
     // check for user 3 dowgo balabnce
-    expect(await dowgoERC20.balanceOf(addr3.address)).to.equal(BigNumber.from(0));
+    expect(await dowgoERC20.balanceOf(addr3.address)).to.equal(
+      BigNumber.from(0)
+    );
 
     // Check that USDC supply hasn't changed
     expect(await dowgoERC20.totalUSDCReserve()).to.equal(initialUSDCReserve);
-    expect(await dowgoERC20.adminTreasury()).to.equal(
-      BigNumber.from(0)
-    );
+    expect(await dowgoERC20.adminTreasury()).to.equal(BigNumber.from(0));
 
     // check for BuyDowgo Event not fired
     const eventFilter = dowgoERC20.filters.BuyDowgo(addr1.address);
@@ -217,14 +213,14 @@ describe("DowgoERC20 - buy", function () {
     }
 
     // check for user 1 dowgo balabnce
-    expect(await dowgoERC20.balanceOf(addr2.address)).to.equal(BigNumber.from(0));
+    expect(await dowgoERC20.balanceOf(addr2.address)).to.equal(
+      BigNumber.from(0)
+    );
 
     // Check that supply of both USDC and Dowgo hasnt been changed
     expect(await dowgoERC20.totalUSDCReserve()).to.equal(initialUSDCReserve);
     expect(await dowgoERC20.totalSupply()).to.equal(initialDowgoSupply);
-    expect(await dowgoERC20.adminTreasury()).to.equal(
-      BigNumber.from(0)
-    );
+    expect(await dowgoERC20.adminTreasury()).to.equal(BigNumber.from(0));
 
     // check for BuyDowgo Event not fired
     const eventFilter = dowgoERC20.filters.BuyDowgo(addr1.address);

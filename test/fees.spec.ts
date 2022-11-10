@@ -30,26 +30,24 @@ describe("DowgoERC20 - fees", function () {
     ({ dowgoERC20, addr1, addr2, addr3, usdcERC20, dowgoAdmin } =
       await setupTestEnvDowgoERC20());
 
-      // Let user 1 buy 1 Dowgo
+    // Let user 1 buy 1 Dowgo
 
-      // Approve erc20 transfer
-      await approveTransfer(
-        usdcERC20,
-        addr1,
-        dowgoERC20.address,
-        TOTAL_USDC_COST
-      );
-  
-      // Create buy tx
-      const buyTx = await dowgoERC20.connect(addr1).buy_dowgo(BUY_AMOUNT);
-  
-      // wait until the transaction is mined
-      await buyTx.wait();
+    // Approve erc20 transfer
+    await approveTransfer(
+      usdcERC20,
+      addr1,
+      dowgoERC20.address,
+      TOTAL_USDC_COST
+    );
+
+    // Create buy tx
+    const buyTx = await dowgoERC20.connect(addr1).buy_dowgo(BUY_AMOUNT);
+
+    // wait until the transaction is mined
+    await buyTx.wait();
   });
   it("Check that treasury has collected the fee", async function () {
-    expect(await dowgoERC20.adminTreasury()).to.equal(
-      USDC_FEE
-    );
+    expect(await dowgoERC20.adminTreasury()).to.equal(USDC_FEE);
   });
   it("Check that treasury has collected the fee - twice", async function () {
     // Let user 1 buy 1 Dowgo
@@ -69,22 +67,24 @@ describe("DowgoERC20 - fees", function () {
     await buyTx.wait();
 
     // Check Treasury
-    expect(await dowgoERC20.adminTreasury()).to.equal(
-      USDC_FEE.mul(2)
-    );
+    expect(await dowgoERC20.adminTreasury()).to.equal(USDC_FEE.mul(2));
   });
   it("Should let admin withdraw the fee", async function () {
     // Create withdraw tx
-    const withdrawTx = await dowgoERC20.connect(dowgoAdmin).withdraw_treasury(USDC_FEE);
+    const withdrawTx = await dowgoERC20
+      .connect(dowgoAdmin)
+      .withdraw_treasury(USDC_FEE);
 
     // wait until the transaction is mined
     await withdrawTx.wait();
 
     // check for WithdrawUSDC Event
-    const eventFilter2 = dowgoERC20.filters.WithdrawUSDCTreasury(dowgoAdmin.address);
+    const eventFilter2 = dowgoERC20.filters.WithdrawUSDCTreasury(
+      dowgoAdmin.address
+    );
     let events2 = await dowgoERC20.queryFilter(eventFilter2);
     expect(events2[0] && events2[0].args[1] && events2[0].args[1]).to.equal(
-        USDC_FEE
+      USDC_FEE
     );
 
     // check pending usdc balances
@@ -101,11 +101,13 @@ describe("DowgoERC20 - fees", function () {
   });
   it("Should not let user 1, who is not an admin, withdraw from treasury", async function () {
     try {
-        // Create withdraw tx
-        const withdrawTx = await dowgoERC20.connect(addr1).withdraw_treasury(USDC_FEE);
-    
-        // wait until the transaction is mined
-        await withdrawTx.wait();
+      // Create withdraw tx
+      const withdrawTx = await dowgoERC20
+        .connect(addr1)
+        .withdraw_treasury(USDC_FEE);
+
+      // wait until the transaction is mined
+      await withdrawTx.wait();
     } catch (e: any) {
       expect(e.toString()).to.equal(
         `Error: VM Exception while processing transaction: reverted with reason string 'AccessControl: account ${addr1.address.toLocaleLowerCase()} is missing role 0x0000000000000000000000000000000000000000000000000000000000000000'`
@@ -116,7 +118,7 @@ describe("DowgoERC20 - fees", function () {
     expect(await dowgoERC20.adminTreasury()).to.equal(USDC_FEE);
     // addr1 usdc balance
     expect(await usdcERC20.balanceOf(addr1.address)).to.equal(
-        initialUser1USDCBalance.sub(TOTAL_USDC_COST)
+      initialUser1USDCBalance.sub(TOTAL_USDC_COST)
     );
     // dowgo sc usdc balance
     expect(await usdcERC20.balanceOf(dowgoERC20.address)).to.equal(
