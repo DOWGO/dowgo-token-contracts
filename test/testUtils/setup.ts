@@ -7,7 +7,6 @@ import {
   initialUSDCReserve,
   initialUser1USDCBalance,
   initRatio,
-  managementFee,
   mockUSDCSupply,
   transactionFee,
 } from "../test-constants";
@@ -15,13 +14,11 @@ import {
 import {
   DowgoERC20,
   DowgoERC20__factory,
-  ERC20,
   ERC20PresetFixedSupply__factory,
   ERC20PresetFixedSupply,
 } from "../../typechain";
 import {
   approveAndSendUSDC,
-  approveTransfer,
   increaseDowgoSupply,
   whitelistUser,
 } from "./tx-utils";
@@ -88,8 +85,7 @@ export const setupTestEnvDowgoERC20 = async () => {
     initRatio,
     collRange,
     usdcERC20.address,
-    transactionFee,
-    managementFee
+    transactionFee
   );
   await dowgoERC20.deployed();
 

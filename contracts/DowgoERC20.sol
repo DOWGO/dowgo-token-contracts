@@ -24,9 +24,6 @@ contract DowgoERC20 is ERC20, AccessControl {
   /// Transaction fee - % (out of 10k), every time a user mints/buys dowgo
   uint16 public transactionFee;
 
-  /// Management fee - % (out of 10^9), monthly on the total usdc reserve
-  uint32 public managementFee;
-
   /// Price in USDC/Dowgo - same deciamls as USDC reserve
   uint256 public currentPrice;
 
@@ -122,15 +119,13 @@ contract DowgoERC20 is ERC20, AccessControl {
     uint16 _targetRatio,
     uint16 _collRange,
     address _usdcTokenAddress,
-    uint16 _transactionFee,
-    uint32 _managementFee
+    uint16 _transactionFee
   ) ERC20("Dowgo", "DWG") {
     usdcToken = IERC20(_usdcTokenAddress);
     currentPrice = _initialPrice;
     targetRatio = _targetRatio;
     collRange = _collRange;
     transactionFee=_transactionFee;
-    managementFee=_managementFee;
     _setupRole(WHITELISTED_ROLE, msg.sender);
     _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
   }

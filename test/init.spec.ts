@@ -9,7 +9,6 @@ import {
   initialUSDCReserve,
   initialUser1USDCBalance,
   initRatio,
-  managementFee,
   transactionFee,
 } from "./test-constants";
 import { setupTestEnvDowgoERC20 } from "./testUtils/setup";
@@ -32,7 +31,6 @@ describe("DowgoERC20 - init", function () {
     expect(await dowgoERC20.targetRatio()).to.equal(initRatio);
     expect(await dowgoERC20.collRange()).to.equal(collRange);
     expect(await dowgoERC20.transactionFee()).to.equal(transactionFee);
-    expect(await dowgoERC20.managementFee()).to.equal(managementFee);
   });
   it("Should check that first address has 100 USDC", async function () {
     // check that user 1 owns 100 USDC
