@@ -114,46 +114,51 @@ describe("DowgoERC20 - sell", function () {
     let events = await dowgoERC20.queryFilter(eventFilter);
     expect(events.length === 0).to.be.true;
   });
-  it("Should not let user 3 - who isn't whitelisted - sell dowgo", async function () {
-    try {
-      // First, the admin should send the tokens to the user 3
-      await approveTransfer(dowgoERC20, dowgoAdmin, addr3.address, SELL_AMOUNT);
-      const transferTx = await dowgoERC20
-        .connect(dowgoAdmin)
-        .transfer(addr3.address, SELL_AMOUNT);
-      await transferTx.wait();
+  it("Should let user 1 - after it has been blacklisted - sell dowgo and cash out", async function () {
+    // Blacklist user 1
+    const blacklistUser1Tx = await dowgoERC20
+      .connect(dowgoAdmin)
+      .revoke_whitelist(addr1.address);
+    await blacklistUser1Tx.wait();
 
-      // Approve erc20 transfer
-      await approveTransfer(
-        usdcERC20,
-        addr3,
-        dowgoERC20.address,
-        SELL_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT)
-      );
+    // sell
+    const sellTx = await dowgoERC20.connect(addr1).sell_dowgo(SELL_AMOUNT);
+    await sellTx.wait();
 
-      // Create buy tx
-      const sellTx = await dowgoERC20.connect(addr3).sell_dowgo(SELL_AMOUNT);
-
-      // wait until the transaction is mined
-      await sellTx.wait();
-    } catch (e: any) {
-      expect(e.toString()).to.equal(
-        `Error: VM Exception while processing transaction: reverted with reason string 'AccessControl: account ${addr3.address.toLowerCase()} is missing role 0x8429d542926e6695b59ac6fbdcd9b37e8b1aeb757afab06ab60b1bb5878c3b49'`
-      );
-    }
-
-    // Check that supply of both USDC and Dowgo hasnt been changed
-    expect(await dowgoERC20.totalUSDCReserve()).to.equal(
-      initialUSDCReserve.add(SELL_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT))
-    );
-    expect(await dowgoERC20.totalSupply()).to.equal(
-      initialDowgoSupply.add(SELL_AMOUNT)
-    );
-
-    // check for SellDowgo Event not fired
+    // check for Sell Event
     const eventFilter = dowgoERC20.filters.SellDowgo(addr1.address);
     let events = await dowgoERC20.queryFilter(eventFilter);
-    expect(events.length === 0).to.be.true;
+    expect(events[0] && events[0].args[1] && events[0].args[1]).to.equal(
+      SELL_AMOUNT
+    );
+
+    // check pending USDC balance
+    expect(await dowgoERC20.usdcUserBalances(addr1.address)).to.equal(
+      initialPrice
+    );
+
+    // withdraw
+    const withdrawTx = await dowgoERC20
+      .connect(addr1)
+      .withdraw_usdc(initialPrice);
+    await withdrawTx.wait();
+
+    // check for WithdrawUSDC Event
+    const eventFilter2 = dowgoERC20.filters.WithdrawUSDC(addr1.address);
+    let events2 = await dowgoERC20.queryFilter(eventFilter2);
+    expect(events2[0] && events2[0].args[1] && events2[0].args[1]).to.equal(
+      initialPrice
+    );
+
+    // check pending usdc balance
+    expect(await dowgoERC20.usdcUserBalances(addr1.address)).to.equal(
+      BigNumber.from(0)
+    );
+
+    // check that user 1 is back to owning 100 USDC minus fee or buygin in the first place
+    expect(await usdcERC20.balanceOf(addr1.address)).to.equal(
+      initialUser1USDCBalance.sub(USDC_FEE)
+    );
   });
   it("Should not let user 1 sell too much tokens (more than 3%*10%=0.3% of total supply =3DWG)", async function () {
     const SELL_AMOUNT_TOO_HIGH = SELL_AMOUNT.mul(10);

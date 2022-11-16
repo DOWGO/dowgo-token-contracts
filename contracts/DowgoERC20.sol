@@ -245,7 +245,7 @@ contract DowgoERC20 is ERC20, AccessControl {
 
   /// Sell Dowgo tokens against USDC
   /// TODO: should non-whitelisted users be allowed to sell?
-  function sell_dowgo(uint256 dowgoAmount) public onlyRole(WHITELISTED_ROLE) returns (bool) {
+  function sell_dowgo(uint256 dowgoAmount) public returns (bool) {
     uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18);
 
     /// Check that the user owns enough tokens
