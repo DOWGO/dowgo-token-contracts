@@ -243,7 +243,8 @@ contract DowgoERC20 is ERC20, AccessControl {
     return true;
   }
 
-  /// Sell Dowgo tokens against ETH
+  /// Sell Dowgo tokens against USDC
+  /// TODO: should non-whitelisted users be allowed to sell?
   function sell_dowgo(uint256 dowgoAmount) public onlyRole(WHITELISTED_ROLE) returns (bool) {
     uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18);
 
@@ -355,7 +356,7 @@ contract DowgoERC20 is ERC20, AccessControl {
     onlyRole(DEFAULT_ADMIN_ROLE)
   {
     /// Effect
-    /// Add Eth to the total reserve
+    /// Add USDC to the total reserve
     totalUSDCReserve = totalUSDCReserve.add(usdcAmount);
 
     ///Interation
@@ -401,4 +402,56 @@ contract DowgoERC20 is ERC20, AccessControl {
     currentPrice = newPrice;
     emit PriceSet(msg.sender, newPrice);
   }
+
+
+    /**
+     * 
+     * @dev Overrides the Openzeppelin ERC20 function to restrict transfers between restricted users
+     * 
+     * 
+     * @dev See {IERC20-transfer}.
+     *
+     * Requirements:
+     *
+     * - `to` cannot be the zero address and must be whitelisted
+     * - the caller must have a balance of at least `amount`.
+     */
+    function transfer(address to, uint256 amount) public virtual override onlyRole(WHITELISTED_ROLE) returns (bool) {
+        require(hasRole(WHITELISTED_ROLE,to),"You can only transfer DWG to whitelisted users");
+        address owner = _msgSender();
+        _transfer(owner, to, amount);
+        return true;
+    }
+    /**
+     * 
+     * @dev Overrides the Openzeppelin ERC20 function to restrict transfers between restricted users
+     * 
+     * 
+     * @dev See {IERC20-transferFrom}.
+     *
+     * Emits an {Approval} event indicating the updated allowance. This is not
+     * required by the EIP. See the note at the beginning of {ERC20}.
+     *
+     * NOTE: Does not update the allowance if the current allowance
+     * is the maximum `uint256`.
+     *
+     * Requirements:
+     *
+     * - `from` and `to` cannot be the zero address and must both be whitelisted
+     * - `from` must have a balance of at least `amount`.
+     * - the caller must have allowance for ``from``'s tokens of at least
+     * `amount`.
+     */
+    function transferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) public virtual override returns (bool) {
+        require(hasRole(WHITELISTED_ROLE,from),"You can only transfer DWG from whitelisted users");
+        require(hasRole(WHITELISTED_ROLE,to),"You can only transfer DWG to whitelisted users");
+        address spender = _msgSender();
+        _spendAllowance(from, spender, amount);
+        _transfer(from, to, amount);
+        return true;
+    }
 }

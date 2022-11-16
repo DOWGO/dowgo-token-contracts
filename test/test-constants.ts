@@ -1,8 +1,16 @@
-import { BigNumber } from "ethers";
+import { BigNumber, ethers } from "ethers";
 
+// Token units
 export const ONE_ETH_UNIT = BigNumber.from((10 ** 18).toString());
 export const ONE_DOWGO_UNIT = BigNumber.from((10 ** 18).toString());
 export const ONE_USDC_UNIT = BigNumber.from((10 ** 6).toString());
+
+// Roles
+export const DEFAULT_ADMIN_ROLE =
+  "0x0000000000000000000000000000000000000000000000000000000000000000";
+export const WHITELISTED_ROLE = ethers.utils.keccak256(
+  ethers.utils.toUtf8Bytes("WHITELISTED_ROLE")
+);
 
 // Initial USDC amounts
 export const initialDowgoSupply = BigNumber.from(1000).mul(ONE_DOWGO_UNIT);

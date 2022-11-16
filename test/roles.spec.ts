@@ -1,25 +1,37 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "ethers";
-import { DowgoERC20Whitelisted, ERC20 } from "../typechain";
+import { DowgoERC20, ERC20 } from "../typechain";
+import { DEFAULT_ADMIN_ROLE, WHITELISTED_ROLE } from "./test-constants";
 
 import { setupTestEnvDowgoERC20 } from "./testUtils";
 
 describe("DowgoERC20 - roles", function () {
-  let dowgoERC20: DowgoERC20Whitelisted, usdcERC20: ERC20;
+  let dowgoERC20: DowgoERC20, usdcERC20: ERC20;
   let addr1: SignerWithAddress,
     addr2: SignerWithAddress,
     addr3: SignerWithAddress,
     dowgoAdmin: SignerWithAddress;
-  const DEFAULT_ADMIN_ROLE =
-    "0x0000000000000000000000000000000000000000000000000000000000000000";
-  const WHITELISTED_ROLE = ethers.utils.keccak256(
-    ethers.utils.toUtf8Bytes("WHITELISTED_ROLE")
-  );
 
   beforeEach(async () => {
     ({ dowgoERC20, usdcERC20, addr1, addr2, addr3, dowgoAdmin } =
       await setupTestEnvDowgoERC20());
+  });
+  it("Should check that user1 is whitelisted", async function () {
+    expect(
+      await dowgoERC20.hasRole(WHITELISTED_ROLE, addr1.address),
+      "role change wasn't enacted"
+    );
+  });
+  it("Should check that user1 can be blacklisted", async function () {
+    const blacklistUser1Tx = await dowgoERC20
+      .connect(dowgoAdmin)
+      .revoke_whitelist(addr1.address);
+    await blacklistUser1Tx.wait();
+    expect(
+      (await dowgoERC20.hasRole(WHITELISTED_ROLE, addr1.address)) === false,
+      "role revokation wasn't enacted"
+    );
   });
   it("Should add user 1 as admin and whitelisted user", async function () {
     const addAdminUser1Tx = await dowgoERC20
