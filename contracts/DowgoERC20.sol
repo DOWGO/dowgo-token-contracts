@@ -244,7 +244,6 @@ contract DowgoERC20 is ERC20, AccessControl {
   }
 
   /// Sell Dowgo tokens against USDC
-  /// TODO: should non-whitelisted users be allowed to sell?
   function sell_dowgo(uint256 dowgoAmount) public returns (bool) {
     uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18);
 
@@ -276,6 +275,41 @@ contract DowgoERC20 is ERC20, AccessControl {
     /// Interactions
     _burn(msg.sender, dowgoAmount); /// TODO check result?
     emit SellDowgo(msg.sender, dowgoAmount, usdcAmount);
+
+    return true;
+  }
+
+  /// Force Sell Dowgo tokens against USDC for a user (from the admin)
+  /// This is used when a user has been blacklisted from Dowgo
+  function force_sell_dowgo(address user) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+    uint256 dowgoAmount=balanceOf(user);
+    uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18);
+
+    /// Check selling dowgo won't let the collateral ratio go under target minus collRange
+    uint256 targetUSDCCollateral = totalSupply()
+      .sub(dowgoAmount)
+      .mul(currentPrice)
+      .mul(targetRatio)
+      .div(10**18) /// div for dowgoAmount
+      .div(10**4); /// div for targetRatio
+    require(
+      totalUSDCReserve.sub(usdcAmount) >
+        targetUSDCCollateral.sub(
+          targetUSDCCollateral.mul(collRange).div(10**4)
+        ),
+      "Contract already bought all dowgo tokens before next rebalancing"
+    );
+
+    ///this should never happen, hence the assert
+    assert(totalUSDCReserve >= usdcAmount);
+
+    /// Transfer USDC from the reserve to the user USDC balance
+    totalUSDCReserve = totalUSDCReserve.sub(usdcAmount);
+    usdcUserBalances[user] = usdcUserBalances[user].add(usdcAmount);
+
+    /// Interactions
+    _burn(user, dowgoAmount); /// TODO check result?
+    emit SellDowgo(user, dowgoAmount, usdcAmount);
 
     return true;
   }
