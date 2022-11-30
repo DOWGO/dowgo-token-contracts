@@ -7,11 +7,9 @@ import {
   initialUser1USDCBalance,
   ONE_DOWGO_UNIT,
   ONE_USDC_UNIT,
+  transactionFee,
 } from "./test-constants";
-import {
-  approveTransfer,
-  setupTestEnvDowgoERC20Whitelisted,
-} from "./testUtils";
+import { approveTransfer, setupTestEnvDowgoERC20 } from "./testUtils";
 
 const testUSDCAmount = ONE_USDC_UNIT;
 
@@ -24,9 +22,9 @@ describe("DowgoERC20 - USDC Reserve", function () {
 
   beforeEach(async () => {
     ({ dowgoERC20, addr1, addr2, usdcERC20, dowgoAdmin } =
-      await setupTestEnvDowgoERC20Whitelisted());
+      await setupTestEnvDowgoERC20());
   });
-  describe("DowgoERC20 - increase_usdc_supply", function () {
+  describe("DowgoERC20 - increase_usdc_reserve", function () {
     it("Should let admin address increase usdc reserve", async function () {
       await approveTransfer(
         usdcERC20,
@@ -36,13 +34,13 @@ describe("DowgoERC20 - USDC Reserve", function () {
       );
       const increaseTx = await dowgoERC20
         .connect(dowgoAdmin)
-        .increase_usdc_supply(testUSDCAmount);
+        .increase_usdc_reserve(testUSDCAmount);
 
       // wait until the transaction is mined
       await increaseTx.wait();
 
       // Check that reserve has been increased
-      expect(await dowgoERC20.totalUSDCSupply()).to.equal(
+      expect(await dowgoERC20.totalUSDCReserve()).to.equal(
         testUSDCAmount.add(initialUSDCReserve)
       );
 
@@ -75,7 +73,7 @@ describe("DowgoERC20 - USDC Reserve", function () {
         );
         const increaseTx = await dowgoERC20
           .connect(addr1)
-          .increase_usdc_supply(testUSDCAmount);
+          .increase_usdc_reserve(testUSDCAmount);
 
         // wait until the transaction is mined
         await increaseTx.wait();
@@ -86,7 +84,7 @@ describe("DowgoERC20 - USDC Reserve", function () {
       }
 
       // Check that reserve has NOT been increased
-      expect(await dowgoERC20.totalUSDCSupply()).to.equal(initialUSDCReserve);
+      expect(await dowgoERC20.totalUSDCReserve()).to.equal(initialUSDCReserve);
 
       // Check that the dowgo sc doesn't own one more usdc
       expect(await usdcERC20.balanceOf(dowgoERC20.address)).to.equal(
@@ -104,25 +102,19 @@ describe("DowgoERC20 - USDC Reserve", function () {
       expect(events.length === 0).to.be.true;
     });
   });
-  describe("DowgoERC20 - decrease_usdc_supply", function () {
-    // beforeEach(async ()=>{
-
-    //   await approveTransfer(usdcERC20,dowgoAdmin,dowgoERC20.address,ONE_UNIT)
-    //   const increaseTx = await dowgoERC20.connect(dowgoAdmin).increase_usdc_supply(ONE_UNIT);
-    //   await increaseTx.wait();
-    // })
+  describe("DowgoERC20 - decrease_usdc_reserve", function () {
     const SMALL_DECREASE = testUSDCAmount.div(100);
 
     it("Should let admin address decrease usdc reserve", async function () {
       const decreaseTx = await dowgoERC20
         .connect(dowgoAdmin)
-        .decrease_usdc_supply(SMALL_DECREASE);
+        .decrease_usdc_reserve(SMALL_DECREASE);
 
       // wait until the transaction is mined
       await decreaseTx.wait();
 
       // Check that reserve has been decreased
-      expect(await dowgoERC20.totalUSDCSupply()).to.equal(
+      expect(await dowgoERC20.totalUSDCReserve()).to.equal(
         initialUSDCReserve.sub(SMALL_DECREASE)
       );
 
@@ -167,7 +159,7 @@ describe("DowgoERC20 - USDC Reserve", function () {
       try {
         const decreaseTx = await dowgoERC20
           .connect(addr1)
-          .decrease_usdc_supply(testUSDCAmount);
+          .decrease_usdc_reserve(testUSDCAmount);
 
         // wait until the transaction is mined
         await decreaseTx.wait();
@@ -178,7 +170,7 @@ describe("DowgoERC20 - USDC Reserve", function () {
       }
 
       // Check that reserve has NOT been decreased
-      expect(await dowgoERC20.totalUSDCSupply()).to.equal(initialUSDCReserve);
+      expect(await dowgoERC20.totalUSDCReserve()).to.equal(initialUSDCReserve);
 
       // check for USDCSupplyIncreased Event not fired
       const eventFilter = dowgoERC20.filters.USDCSupplyDecreased(addr1.address);
@@ -196,15 +188,20 @@ describe("DowgoERC20 - USDC Reserve", function () {
       );
     });
     it("Should not let admin address decrease usdc reserve bellow min ratio", async function () {
+      const TEST_AMOUNT = ONE_DOWGO_UNIT;
+      const USDC_COST_NO_FEE =
+        TEST_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT);
+      const USDC_FEE = USDC_COST_NO_FEE.mul(transactionFee).div(10000);
+      const TOTAL_USDC_COST = USDC_COST_NO_FEE.add(USDC_FEE);
       // Approve erc20 transfer
       await approveTransfer(
         usdcERC20,
         addr1,
         dowgoERC20.address,
-        testUSDCAmount.mul(2)
+        TOTAL_USDC_COST
       );
       // First mine some tokens
-      const buyTx = await dowgoERC20.connect(addr1).buy_dowgo(ONE_DOWGO_UNIT);
+      const buyTx = await dowgoERC20.connect(addr1).buy_dowgo(TEST_AMOUNT);
 
       // wait until the transaction is mined
       await buyTx.wait();
@@ -212,7 +209,7 @@ describe("DowgoERC20 - USDC Reserve", function () {
       try {
         const decreaseTx = await dowgoERC20
           .connect(dowgoAdmin)
-          .decrease_usdc_supply(initialUSDCReserve.add(initialPrice));
+          .decrease_usdc_reserve(initialUSDCReserve.add(initialPrice));
 
         // wait until the transaction is mined
         await decreaseTx.wait();
@@ -223,7 +220,7 @@ describe("DowgoERC20 - USDC Reserve", function () {
       }
 
       // Check that reserve has NOT been decreased
-      expect(await dowgoERC20.totalUSDCSupply()).to.equal(
+      expect(await dowgoERC20.totalUSDCReserve()).to.equal(
         initialUSDCReserve.add(initialPrice)
       );
 
@@ -243,7 +240,7 @@ describe("DowgoERC20 - USDC Reserve", function () {
       );
       // dowgo sc usdc balance
       expect(await usdcERC20.balanceOf(dowgoERC20.address)).to.equal(
-        initialUSDCReserve.add(initialPrice)
+        initialUSDCReserve.add(initialPrice).add(USDC_FEE)
       );
     });
   });

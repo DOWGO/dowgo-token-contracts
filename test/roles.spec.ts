@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { ethers } from "ethers";
 import { DowgoERC20Whitelisted, ERC20 } from "../typechain";
 
-import { setupTestEnvDowgoERC20Whitelisted } from "./testUtils";
+import { setupTestEnvDowgoERC20 } from "./testUtils";
 
 describe("DowgoERC20 - roles", function () {
   let dowgoERC20: DowgoERC20Whitelisted, usdcERC20: ERC20;
@@ -19,7 +19,7 @@ describe("DowgoERC20 - roles", function () {
 
   beforeEach(async () => {
     ({ dowgoERC20, usdcERC20, addr1, addr2, addr3, dowgoAdmin } =
-      await setupTestEnvDowgoERC20Whitelisted());
+      await setupTestEnvDowgoERC20());
   });
   it("Should add user 1 as admin and whitelisted user", async function () {
     const addAdminUser1Tx = await dowgoERC20

@@ -19,3 +19,4 @@ export const initPriceInteger = 2;
 export const initialPrice = ONE_USDC_UNIT.mul(initPriceInteger); // start price is 2USDC/DWG
 export const initRatio = BigNumber.from(300); // out of 10k => 3%
 export const collRange = BigNumber.from(1000); // out of 10k i.e. 10%
+export const transactionFee = BigNumber.from(100); // out of 10k i.e. 1%

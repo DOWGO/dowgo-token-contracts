@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { DowgoERC20 } from "../typechain";
 import { initialUSDCReserve, ONE_USDC_UNIT } from "./test-constants";
-import { setupTestEnvDowgoERC20Whitelisted } from "./testUtils/setup";
+import { setupTestEnvDowgoERC20 } from "./testUtils/setup";
 
 describe("DowgoERC20 - setPrice", function () {
   let dowgoERC20: DowgoERC20;
@@ -12,8 +12,7 @@ describe("DowgoERC20 - setPrice", function () {
   const newPrice = ONE_USDC_UNIT.mul(3);
 
   beforeEach(async () => {
-    ({ dowgoERC20, dowgoAdmin, addr1 } =
-      await setupTestEnvDowgoERC20Whitelisted());
+    ({ dowgoERC20, dowgoAdmin, addr1 } = await setupTestEnvDowgoERC20());
   });
   it("Should let admin set price", async function () {
     const setPriceTx = await dowgoERC20
@@ -48,7 +47,7 @@ describe("DowgoERC20 - setPrice", function () {
     }
 
     // Check that price has NOT been set
-    expect(await dowgoERC20.totalUSDCSupply()).to.equal(initialUSDCReserve);
+    expect(await dowgoERC20.totalUSDCReserve()).to.equal(initialUSDCReserve);
 
     // check for PriceSet Event not fired
     const eventFilter = dowgoERC20.filters.PriceSet(addr1.address);
@@ -70,7 +69,7 @@ describe("DowgoERC20 - setPrice", function () {
     }
 
     // Check that price has NOT been set
-    expect(await dowgoERC20.totalUSDCSupply()).to.equal(initialUSDCReserve);
+    expect(await dowgoERC20.totalUSDCReserve()).to.equal(initialUSDCReserve);
 
     // check for PriceSet Event not fired
     const eventFilter = dowgoERC20.filters.PriceSet(addr1.address);

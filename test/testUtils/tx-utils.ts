@@ -2,11 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ONE_USDC_UNIT } from "../test-constants";
 
-import {
-  DowgoERC20Whitelisted,
-  ERC20,
-  ERC20PresetFixedSupply,
-} from "../../typechain";
+import { DowgoERC20, ERC20, ERC20PresetFixedSupply } from "../../typechain";
 
 export const approveTransfer = async (
   usdcERC20: ERC20,
@@ -42,7 +38,7 @@ export const approveAndSendUSDC = async (
 
 export const increaseDowgoSupply = async (
   usdcERC20: ERC20PresetFixedSupply,
-  dowgoERC20: DowgoERC20Whitelisted,
+  dowgoERC20: DowgoERC20,
   dowgoAdmin: SignerWithAddress,
   amount: BigNumber
 ) => {
@@ -65,7 +61,7 @@ export const increaseDowgoSupply = async (
 };
 
 export const whitelistUser = async (
-  dowgoERC20: DowgoERC20Whitelisted,
+  dowgoERC20: DowgoERC20,
   dowgoAdmin: SignerWithAddress,
   user: string
 ) => {

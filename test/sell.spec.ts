@@ -9,11 +9,9 @@ import {
   initialUser1USDCBalance,
   initRatio,
   ONE_DOWGO_UNIT,
+  transactionFee,
 } from "./test-constants";
-import {
-  approveTransfer,
-  setupTestEnvDowgoERC20Whitelisted,
-} from "./testUtils";
+import { approveTransfer, setupTestEnvDowgoERC20 } from "./testUtils";
 
 describe("DowgoERC20 - sell", function () {
   let dowgoERC20: DowgoERC20;
@@ -23,16 +21,22 @@ describe("DowgoERC20 - sell", function () {
   let addr3: SignerWithAddress;
   const SELL_AMOUNT = ONE_DOWGO_UNIT;
 
+  // Cost of buying dowgo with fee
+  const USDC_COST_NO_FEE = SELL_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT);
+  const USDC_FEE = USDC_COST_NO_FEE.mul(transactionFee).div(10000);
+  const TOTAL_USDC_COST = USDC_COST_NO_FEE.add(USDC_FEE);
+
   // buy tokens before selling them
   beforeEach(async () => {
     ({ dowgoERC20, addr1, addr3, usdcERC20, dowgoAdmin } =
-      await setupTestEnvDowgoERC20Whitelisted());
+      await setupTestEnvDowgoERC20());
+
     // Approve erc20 transfer
     await approveTransfer(
       usdcERC20,
       addr1,
       dowgoERC20.address,
-      SELL_AMOUNT.mul(2)
+      TOTAL_USDC_COST
     );
     // buy
     const buyTx = await dowgoERC20.connect(addr1).buy_dowgo(SELL_AMOUNT);
@@ -75,9 +79,9 @@ describe("DowgoERC20 - sell", function () {
       BigNumber.from(0)
     );
 
-    // check that user 1 is back to owning 100 USDC
+    // check that user 1 is back to owning 100 USDC minus fee or buygin in the first place
     expect(await usdcERC20.balanceOf(addr1.address)).to.equal(
-      initialUser1USDCBalance
+      initialUser1USDCBalance.sub(USDC_FEE)
     );
   });
   it("Should not let user 1 sell an amount of tokens they don't own", async function () {
@@ -98,7 +102,7 @@ describe("DowgoERC20 - sell", function () {
     }
 
     // Check that supply of both USDC and Dowgo hasnt been changed
-    expect(await dowgoERC20.totalUSDCSupply()).to.equal(
+    expect(await dowgoERC20.totalUSDCReserve()).to.equal(
       initialUSDCReserve.add(SELL_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT))
     );
     expect(await dowgoERC20.totalSupply()).to.equal(
@@ -139,7 +143,7 @@ describe("DowgoERC20 - sell", function () {
     }
 
     // Check that supply of both USDC and Dowgo hasnt been changed
-    expect(await dowgoERC20.totalUSDCSupply()).to.equal(
+    expect(await dowgoERC20.totalUSDCReserve()).to.equal(
       initialUSDCReserve.add(SELL_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT))
     );
     expect(await dowgoERC20.totalSupply()).to.equal(
@@ -154,7 +158,7 @@ describe("DowgoERC20 - sell", function () {
   it("Should not let user 1 sell too much tokens (more than 3%*10%=0.3% of total supply =3DWG)", async function () {
     const SELL_AMOUNT_TOO_HIGH = SELL_AMOUNT.mul(10);
 
-    const usdcReserveBefore = await dowgoERC20.totalUSDCSupply();
+    const usdcReserveBefore = await dowgoERC20.totalUSDCReserve();
     const dowgoSupplyBefore = await dowgoERC20.totalSupply();
 
     // First, the admin should send the tokens to the user
@@ -185,7 +189,7 @@ describe("DowgoERC20 - sell", function () {
     }
 
     // Check that supply of both USDC and Dowgo hasnt been changed
-    expect(await dowgoERC20.totalUSDCSupply()).to.equal(usdcReserveBefore);
+    expect(await dowgoERC20.totalUSDCReserve()).to.equal(usdcReserveBefore);
     expect(await dowgoERC20.totalSupply()).to.equal(dowgoSupplyBefore);
 
     // check for SellDowgo Event not fired
@@ -198,6 +202,7 @@ describe("DowgoERC20 - sell", function () {
     let initialContractUSDCBalance = await usdcERC20.balanceOf(
       dowgoERC20.address
     );
+    let initialContractUSDCReserve = await dowgoERC20.totalUSDCReserve();
     const SELL_AMOUNT_TOO_HIGH = initialDowgoSupply;
 
     // Create sell tx
@@ -233,11 +238,11 @@ describe("DowgoERC20 - sell", function () {
     // check that contract owns targetRatio less USDC
     expect(await usdcERC20.balanceOf(dowgoERC20.address)).to.equal(
       initialContractUSDCBalance.sub(usdcFromAdminSell),
-      "Contract doesn't own right amount of USDC"
+      "Contract USDC balance is not correct"
     );
-    expect(await dowgoERC20.totalUSDCSupply()).to.equal(
-      initialContractUSDCBalance.sub(usdcFromAdminSell),
-      "Contract doesn't own right amount of USDC"
+    expect(await dowgoERC20.totalUSDCReserve()).to.equal(
+      initialContractUSDCReserve.sub(usdcFromAdminSell),
+      "Contract USDC reserve is not correct"
     );
 
     // check for second admin Buy Event
