@@ -243,8 +243,8 @@ contract DowgoERC20 is ERC20, AccessControl {
     return true;
   }
 
-  /// Sell Dowgo tokens against ETH
-  function sell_dowgo(uint256 dowgoAmount) public onlyRole(WHITELISTED_ROLE) returns (bool) {
+  /// Sell Dowgo tokens against USDC
+  function sell_dowgo(uint256 dowgoAmount) public returns (bool) {
     uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18);
 
     /// Check that the user owns enough tokens
@@ -275,6 +275,41 @@ contract DowgoERC20 is ERC20, AccessControl {
     /// Interactions
     _burn(msg.sender, dowgoAmount); /// TODO check result?
     emit SellDowgo(msg.sender, dowgoAmount, usdcAmount);
+
+    return true;
+  }
+
+  /// Force Sell Dowgo tokens against USDC for a user (from the admin)
+  /// This is used when a user has been blacklisted from Dowgo
+  function force_sell_dowgo(address user) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+    uint256 dowgoAmount=balanceOf(user);
+    uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18);
+
+    /// Check selling dowgo won't let the collateral ratio go under target minus collRange
+    uint256 targetUSDCCollateral = totalSupply()
+      .sub(dowgoAmount)
+      .mul(currentPrice)
+      .mul(targetRatio)
+      .div(10**18) /// div for dowgoAmount
+      .div(10**4); /// div for targetRatio
+    require(
+      totalUSDCReserve.sub(usdcAmount) >
+        targetUSDCCollateral.sub(
+          targetUSDCCollateral.mul(collRange).div(10**4)
+        ),
+      "Contract already bought all dowgo tokens before next rebalancing"
+    );
+
+    ///this should never happen, hence the assert
+    assert(totalUSDCReserve >= usdcAmount);
+
+    /// Transfer USDC from the reserve to the user USDC balance
+    totalUSDCReserve = totalUSDCReserve.sub(usdcAmount);
+    usdcUserBalances[user] = usdcUserBalances[user].add(usdcAmount);
+
+    /// Interactions
+    _burn(user, dowgoAmount); /// TODO check result?
+    emit SellDowgo(user, dowgoAmount, usdcAmount);
 
     return true;
   }
@@ -355,7 +390,7 @@ contract DowgoERC20 is ERC20, AccessControl {
     onlyRole(DEFAULT_ADMIN_ROLE)
   {
     /// Effect
-    /// Add Eth to the total reserve
+    /// Add USDC to the total reserve
     totalUSDCReserve = totalUSDCReserve.add(usdcAmount);
 
     ///Interation
@@ -401,4 +436,56 @@ contract DowgoERC20 is ERC20, AccessControl {
     currentPrice = newPrice;
     emit PriceSet(msg.sender, newPrice);
   }
+
+
+    /**
+     * 
+     * @dev Overrides the Openzeppelin ERC20 function to restrict transfers between restricted users
+     * 
+     * 
+     * @dev See {IERC20-transfer}.
+     *
+     * Requirements:
+     *
+     * - `to` cannot be the zero address and must be whitelisted
+     * - the caller must have a balance of at least `amount`.
+     */
+    function transfer(address to, uint256 amount) public virtual override onlyRole(WHITELISTED_ROLE) returns (bool) {
+        require(hasRole(WHITELISTED_ROLE,to),"You can only transfer DWG to whitelisted users");
+        address owner = _msgSender();
+        _transfer(owner, to, amount);
+        return true;
+    }
+    /**
+     * 
+     * @dev Overrides the Openzeppelin ERC20 function to restrict transfers between restricted users
+     * 
+     * 
+     * @dev See {IERC20-transferFrom}.
+     *
+     * Emits an {Approval} event indicating the updated allowance. This is not
+     * required by the EIP. See the note at the beginning of {ERC20}.
+     *
+     * NOTE: Does not update the allowance if the current allowance
+     * is the maximum `uint256`.
+     *
+     * Requirements:
+     *
+     * - `from` and `to` cannot be the zero address and must both be whitelisted
+     * - `from` must have a balance of at least `amount`.
+     * - the caller must have allowance for ``from``'s tokens of at least
+     * `amount`.
+     */
+    function transferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) public virtual override returns (bool) {
+        require(hasRole(WHITELISTED_ROLE,from),"You can only transfer DWG from whitelisted users");
+        require(hasRole(WHITELISTED_ROLE,to),"You can only transfer DWG to whitelisted users");
+        address spender = _msgSender();
+        _spendAllowance(from, spender, amount);
+        _transfer(from, to, amount);
+        return true;
+    }
 }

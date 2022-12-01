@@ -5,12 +5,12 @@ import { ONE_USDC_UNIT } from "../test-constants";
 import { DowgoERC20, ERC20, ERC20PresetFixedSupply } from "../../typechain";
 
 export const approveTransfer = async (
-  usdcERC20: ERC20,
+  erc20: ERC20,
   from: SignerWithAddress,
   to: string,
   amount: BigNumber
 ) => {
-  const approveTx = await usdcERC20.connect(from).approve(to, amount);
+  const approveTx = await erc20.connect(from).approve(to, amount);
   await approveTx.wait();
 };
 

@@ -10,6 +10,7 @@ import {
   ONE_DOWGO_UNIT,
   initialPrice,
   transactionFee,
+  WHITELISTED_ROLE,
 } from "./test-constants";
 import { approveTransfer, setupTestEnvDowgoERC20 } from "./testUtils";
 
@@ -171,7 +172,7 @@ describe("DowgoERC20 - buy", function () {
       await buyTx.wait();
     } catch (e: any) {
       expect(e.toString()).to.equal(
-        `Error: VM Exception while processing transaction: reverted with reason string 'AccessControl: account ${addr3.address.toLowerCase()} is missing role 0x8429d542926e6695b59ac6fbdcd9b37e8b1aeb757afab06ab60b1bb5878c3b49'`
+        `Error: VM Exception while processing transaction: reverted with reason string 'AccessControl: account ${addr3.address.toLowerCase()} is missing role ${WHITELISTED_ROLE}'`
       );
     }
     // check for user 3 dowgo balabnce
