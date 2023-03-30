@@ -2,12 +2,12 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers, network } from "hardhat";
 import {
   collRange,
-  initialDowgoSupply,
-  initialPrice,
-  initialUSDCReserve,
-  initialUser1USDCBalance,
+  // initialDowgoSupply,
+  // initialPrice,
+  // initialUSDCReserve,
+  // initialUser1USDCBalance,
   initRatio,
-  mockUSDCSupply,
+  // mockUSDCSupply,
   transactionFee,
 } from "../test-constants";
 
@@ -22,8 +22,25 @@ import {
   increaseDowgoSupply,
   whitelistUser,
 } from "./tx-utils";
+import { BigNumber } from "ethers";
 
-export const setupTestEnvDowgoERC20 = async () => {
+interface SetupInputs {
+  initialUSDCReserve: BigNumber;
+  mockUSDCSupply: BigNumber;
+  initialUser1USDCBalance: BigNumber;
+  initialPrice: BigNumber;
+  initialDowgoSupply: BigNumber;
+}
+
+export const setupTestEnvDowgoERC20 = async (setupInputs: SetupInputs) => {
+  const {
+    initialPrice,
+    initialUSDCReserve,
+    initialUser1USDCBalance,
+    mockUSDCSupply,
+    initialDowgoSupply,
+  } = setupInputs;
+
   let dowgoERC20: DowgoERC20, usdcERC20: ERC20PresetFixedSupply;
   let dowgoAdmin: SignerWithAddress;
   let usdcCreator: SignerWithAddress;
@@ -69,7 +86,7 @@ export const setupTestEnvDowgoERC20 = async () => {
     initialUser1USDCBalance
   );
 
-  // Send 2000 USDC to dowgoAdmin
+  // Send initialUSDCReserve * 2 USDC to dowgoAdmin
   await approveAndSendUSDC(
     usdcERC20,
     usdcCreator,

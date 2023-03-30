@@ -10,6 +10,7 @@ import {
   ONE_DOWGO_UNIT,
   initialPrice,
   transactionFee,
+  mockUSDCSupply,
 } from "./test-constants";
 import { approveTransfer, setupTestEnvDowgoERC20 } from "./testUtils";
 
@@ -28,7 +29,13 @@ describe("DowgoERC20 - fees", function () {
 
   beforeEach(async () => {
     ({ dowgoERC20, addr1, addr2, addr3, usdcERC20, dowgoAdmin } =
-      await setupTestEnvDowgoERC20());
+      await setupTestEnvDowgoERC20({
+        initialPrice,
+        initialUSDCReserve,
+        initialUser1USDCBalance,
+        mockUSDCSupply,
+        initialDowgoSupply,
+      }));
 
     // Let user 1 buy 1 Dowgo
 

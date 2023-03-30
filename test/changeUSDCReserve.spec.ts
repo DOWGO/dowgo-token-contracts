@@ -2,9 +2,11 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { DowgoERC20, ERC20 } from "../typechain";
 import {
+  initialDowgoSupply,
   initialPrice,
   initialUSDCReserve,
   initialUser1USDCBalance,
+  mockUSDCSupply,
   ONE_DOWGO_UNIT,
   ONE_USDC_UNIT,
   transactionFee,
@@ -22,7 +24,13 @@ describe("DowgoERC20 - USDC Reserve", function () {
 
   beforeEach(async () => {
     ({ dowgoERC20, addr1, addr2, usdcERC20, dowgoAdmin } =
-      await setupTestEnvDowgoERC20());
+      await setupTestEnvDowgoERC20({
+        initialPrice,
+        initialUSDCReserve,
+        initialUser1USDCBalance,
+        mockUSDCSupply,
+        initialDowgoSupply,
+      }));
   });
   describe("DowgoERC20 - increase_usdc_reserve", function () {
     it("Should let admin address increase usdc reserve", async function () {

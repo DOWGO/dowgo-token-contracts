@@ -1,6 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
-import { ONE_USDC_UNIT } from "../test-constants";
+import { ONE_DOWGO_UNIT, ONE_USDC_UNIT } from "../test-constants";
 
 import { DowgoERC20, ERC20, ERC20PresetFixedSupply } from "../../typechain";
 
@@ -51,7 +51,7 @@ export const increaseDowgoSupply = async (
     amount
       .mul(price)
       .mul(initRatio)
-      .div(ONE_USDC_UNIT)
+      .div(ONE_DOWGO_UNIT)
       .div(BigNumber.from(10000))
   );
   const increaseTx = await dowgoERC20

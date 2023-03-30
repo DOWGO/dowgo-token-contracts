@@ -9,6 +9,12 @@ import {
   initialUSDCReserve,
   initialUser1USDCBalance,
   initRatio,
+  lowInitialDowgoSupply,
+  lowInitialPrice,
+  lowInitialUSDCReserve,
+  lowInitialUser1USDCBalance,
+  lowMockUSDCSupply,
+  mockUSDCSupply,
   ONE_DOWGO_UNIT,
   transactionFee,
 } from "./test-constants";
@@ -30,7 +36,13 @@ describe("DowgoERC20 - sell", function () {
   // buy tokens before selling them
   beforeEach(async () => {
     ({ dowgoERC20, addr1, addr2, usdcERC20, dowgoAdmin } =
-      await setupTestEnvDowgoERC20());
+      await setupTestEnvDowgoERC20({
+        initialPrice,
+        initialUSDCReserve,
+        initialUser1USDCBalance,
+        mockUSDCSupply,
+        initialDowgoSupply,
+      }));
 
     // Approve erc20 transfer
     await approveTransfer(
@@ -169,28 +181,39 @@ describe("DowgoERC20 - sell", function () {
       );
     });
     it("Should not let user 1 sell too much tokens (more than 3%*10%=0.3% of total supply =3DWG)", async function () {
+      const {
+        dowgoERC20: lowdDowgoERC20,
+        addr1: lowAddr1,
+        dowgoAdmin: lowDowgoAdmin,
+      } = await setupTestEnvDowgoERC20({
+        initialPrice: lowInitialPrice,
+        initialUSDCReserve: lowInitialUSDCReserve,
+        initialUser1USDCBalance: lowInitialUser1USDCBalance,
+        mockUSDCSupply: lowMockUSDCSupply,
+        initialDowgoSupply: lowInitialDowgoSupply,
+      });
+
       const SELL_AMOUNT_TOO_HIGH = SELL_AMOUNT.mul(10);
 
-      const usdcReserveBefore = await dowgoERC20.totalUSDCReserve();
-      const dowgoSupplyBefore = await dowgoERC20.totalSupply();
+      const usdcReserveBefore = await lowdDowgoERC20.totalUSDCReserve();
+      const dowgoSupplyBefore = await lowdDowgoERC20.totalSupply();
 
       // First, the admin should send the tokens to the user
       await approveTransfer(
-        dowgoERC20,
-        dowgoAdmin,
-        addr1.address,
+        lowdDowgoERC20,
+        lowDowgoAdmin,
+        lowAddr1.address,
         SELL_AMOUNT_TOO_HIGH
       );
-
-      const transferTx = await dowgoERC20
-        .connect(dowgoAdmin)
-        .transfer(addr1.address, SELL_AMOUNT_TOO_HIGH);
+      const transferTx = await lowdDowgoERC20
+        .connect(lowDowgoAdmin)
+        .transfer(lowAddr1.address, SELL_AMOUNT_TOO_HIGH);
       await transferTx.wait();
 
       try {
         // Create sell tx
-        const sellTx = await dowgoERC20
-          .connect(addr1)
+        const sellTx = await lowdDowgoERC20
+          .connect(lowAddr1)
           .sell_dowgo(SELL_AMOUNT_TOO_HIGH);
 
         // wait until the transaction is mined
@@ -202,12 +225,14 @@ describe("DowgoERC20 - sell", function () {
       }
 
       // Check that supply of both USDC and Dowgo hasnt been changed
-      expect(await dowgoERC20.totalUSDCReserve()).to.equal(usdcReserveBefore);
-      expect(await dowgoERC20.totalSupply()).to.equal(dowgoSupplyBefore);
+      expect(await lowdDowgoERC20.totalUSDCReserve()).to.equal(
+        usdcReserveBefore
+      );
+      expect(await lowdDowgoERC20.totalSupply()).to.equal(dowgoSupplyBefore);
 
       // check for SellDowgo Event not fired
-      const eventFilter = dowgoERC20.filters.SellDowgo(addr1.address);
-      let events = await dowgoERC20.queryFilter(eventFilter);
+      const eventFilter = lowdDowgoERC20.filters.SellDowgo(lowAddr1.address);
+      let events = await lowdDowgoERC20.queryFilter(eventFilter);
       expect(events.length === 0).to.be.true;
     });
   });

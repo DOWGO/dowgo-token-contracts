@@ -9,6 +9,8 @@ import {
   initialUSDCReserve,
   initialUser1USDCBalance,
   initRatio,
+  mockUSDCSupply,
+  ONE_USDC_UNIT,
   transactionFee,
 } from "./test-constants";
 import { setupTestEnvDowgoERC20 } from "./testUtils/setup";
@@ -21,7 +23,13 @@ describe("DowgoERC20 - init", function () {
 
   beforeEach(async () => {
     ({ dowgoERC20, usdcERC20, addr1, addr3, dowgoAdmin } =
-      await setupTestEnvDowgoERC20());
+      await setupTestEnvDowgoERC20({
+        initialPrice,
+        initialUSDCReserve,
+        initialUser1USDCBalance,
+        mockUSDCSupply,
+        initialDowgoSupply,
+      }));
   });
   it("Should check that deployement was successful with right initial amount", async function () {
     expect(await dowgoERC20.totalSupply()).to.equal(initialDowgoSupply);
@@ -32,13 +40,17 @@ describe("DowgoERC20 - init", function () {
     expect(await dowgoERC20.collRange()).to.equal(collRange);
     expect(await dowgoERC20.transactionFee()).to.equal(transactionFee);
   });
-  it("Should check that first address has 100 USDC", async function () {
+  it(`Should check that first address has ${
+    Number(initialUser1USDCBalance) / Number(ONE_USDC_UNIT)
+  } USDC`, async function () {
     // check that user 1 owns 100 USDC
     expect(await usdcERC20.balanceOf(addr1.address)).to.equal(
       initialUser1USDCBalance
     );
   });
-  it("Should check that third address has 100 USDC", async function () {
+  it(`Should check that third address has ${
+    Number(initialUser1USDCBalance) / Number(ONE_USDC_UNIT)
+  } USDC`, async function () {
     // check that user 3 owns 100 USDC
     expect(await usdcERC20.balanceOf(addr3.address)).to.equal(
       initialUser1USDCBalance
@@ -50,7 +62,9 @@ describe("DowgoERC20 - init", function () {
       initialUSDCReserve
     );
   });
-  it("Should check that dowgo contract owns 1000 USDC", async function () {
+  it(`Should check that dowgo contract owns ${
+    Number(initialUSDCReserve) / Number(ONE_USDC_UNIT)
+  } USDC`, async function () {
     expect(await usdcERC20.balanceOf(dowgoERC20.address)).to.equal(
       initialUSDCReserve
     );

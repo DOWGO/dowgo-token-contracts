@@ -2,7 +2,15 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "ethers";
 import { DowgoERC20, ERC20 } from "../typechain";
-import { DEFAULT_ADMIN_ROLE, WHITELISTED_ROLE } from "./test-constants";
+import {
+  DEFAULT_ADMIN_ROLE,
+  WHITELISTED_ROLE,
+  initialDowgoSupply,
+  initialPrice,
+  initialUSDCReserve,
+  initialUser1USDCBalance,
+  mockUSDCSupply,
+} from "./test-constants";
 
 import { setupTestEnvDowgoERC20 } from "./testUtils";
 
@@ -15,7 +23,13 @@ describe("DowgoERC20 - roles", function () {
 
   beforeEach(async () => {
     ({ dowgoERC20, usdcERC20, addr1, addr2, addr3, dowgoAdmin } =
-      await setupTestEnvDowgoERC20());
+      await setupTestEnvDowgoERC20({
+        initialPrice,
+        initialUSDCReserve,
+        initialUser1USDCBalance,
+        mockUSDCSupply,
+        initialDowgoSupply,
+      }));
   });
   it("Should check that user1 is whitelisted", async function () {
     expect(

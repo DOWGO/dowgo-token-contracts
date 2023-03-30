@@ -2,7 +2,14 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { DowgoERC20, ERC20 } from "../typechain";
-import { ONE_USDC_UNIT } from "./test-constants";
+import {
+  ONE_USDC_UNIT,
+  initialDowgoSupply,
+  initialPrice,
+  initialUSDCReserve,
+  initialUser1USDCBalance,
+  mockUSDCSupply,
+} from "./test-constants";
 import { setupTestEnvDowgoERC20 } from "./testUtils/setup";
 
 describe("DowgoERC20 - withdraw", function () {
@@ -12,7 +19,13 @@ describe("DowgoERC20 - withdraw", function () {
 
   // buy tokens before selling them
   beforeEach(async () => {
-    ({ dowgoERC20, addr2, usdcERC20 } = await setupTestEnvDowgoERC20());
+    ({ dowgoERC20, addr2, usdcERC20 } = await setupTestEnvDowgoERC20({
+      initialPrice,
+      initialUSDCReserve,
+      initialUser1USDCBalance,
+      mockUSDCSupply,
+      initialDowgoSupply,
+    }));
   });
   it("Should not let user withdraw with no balance", async function () {
     try {

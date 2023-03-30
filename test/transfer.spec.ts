@@ -8,6 +8,7 @@ import {
   initialUSDCReserve,
   initialUser1USDCBalance,
   initRatio,
+  mockUSDCSupply,
   ONE_DOWGO_UNIT,
   transactionFee,
   WHITELISTED_ROLE,
@@ -31,7 +32,13 @@ describe("DowgoERC20 - transfer", function () {
   // buy tokens for addr1
   beforeEach(async () => {
     ({ dowgoERC20, addr1, addr2, addr3, usdcERC20, dowgoAdmin } =
-      await setupTestEnvDowgoERC20());
+      await setupTestEnvDowgoERC20({
+        initialPrice,
+        initialUSDCReserve,
+        initialUser1USDCBalance,
+        mockUSDCSupply,
+        initialDowgoSupply,
+      }));
 
     // Approve erc20 transfer
     await approveTransfer(
@@ -143,7 +150,13 @@ describe("DowgoERC20 - transferFrom", function () {
   // buy tokens for addr1
   beforeEach(async () => {
     ({ dowgoERC20, addr1, addr2, addr3, usdcERC20, dowgoAdmin } =
-      await setupTestEnvDowgoERC20());
+      await setupTestEnvDowgoERC20({
+        initialPrice,
+        initialUSDCReserve,
+        initialUser1USDCBalance,
+        mockUSDCSupply,
+        initialDowgoSupply,
+      }));
 
     // Approve erc20 transfer
     await approveTransfer(

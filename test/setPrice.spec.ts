@@ -2,7 +2,14 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { DowgoERC20 } from "../typechain";
-import { initialUSDCReserve, ONE_USDC_UNIT } from "./test-constants";
+import {
+  initialDowgoSupply,
+  initialPrice,
+  initialUSDCReserve,
+  initialUser1USDCBalance,
+  mockUSDCSupply,
+  ONE_USDC_UNIT,
+} from "./test-constants";
 import { setupTestEnvDowgoERC20 } from "./testUtils/setup";
 
 describe("DowgoERC20 - setPrice", function () {
@@ -12,7 +19,13 @@ describe("DowgoERC20 - setPrice", function () {
   const newPrice = ONE_USDC_UNIT.mul(3);
 
   beforeEach(async () => {
-    ({ dowgoERC20, dowgoAdmin, addr1 } = await setupTestEnvDowgoERC20());
+    ({ dowgoERC20, dowgoAdmin, addr1 } = await setupTestEnvDowgoERC20({
+      initialPrice,
+      initialUSDCReserve,
+      initialUser1USDCBalance,
+      mockUSDCSupply,
+      initialDowgoSupply,
+    }));
   });
   it("Should let admin set price", async function () {
     const setPriceTx = await dowgoERC20

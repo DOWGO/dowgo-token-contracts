@@ -14,6 +14,7 @@ import {
   initialUser1USDCBalance,
   initRatio,
   mockUSDCSupply,
+  transactionFee,
 } from "../test/test-constants";
 import { approveTransfer } from "../test/testUtils";
 import {
@@ -89,7 +90,8 @@ async function main() {
     initialPrice,
     initRatio,
     collRange,
-    usdcERC20.address
+    usdcERC20.address,
+    transactionFee
   );
   await dowgoERC20.deployed();
 

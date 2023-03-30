@@ -11,6 +11,12 @@ import {
   initialPrice,
   transactionFee,
   WHITELISTED_ROLE,
+  mockUSDCSupply,
+  lowInitialPrice,
+  lowInitialUSDCReserve,
+  lowInitialUser1USDCBalance,
+  lowMockUSDCSupply,
+  lowInitialDowgoSupply,
 } from "./test-constants";
 import { approveTransfer, setupTestEnvDowgoERC20 } from "./testUtils";
 
@@ -29,7 +35,13 @@ describe("DowgoERC20 - buy", function () {
 
   beforeEach(async () => {
     ({ dowgoERC20, addr1, addr2, addr3, usdcERC20, dowgoAdmin } =
-      await setupTestEnvDowgoERC20());
+      await setupTestEnvDowgoERC20({
+        initialPrice,
+        initialUSDCReserve,
+        initialUser1USDCBalance,
+        mockUSDCSupply,
+        initialDowgoSupply,
+      }));
   });
   it("Should let first address buy dowgo token against usdc", async function () {
     // Approve erc20 transfer
@@ -190,19 +202,40 @@ describe("DowgoERC20 - buy", function () {
     expect(events.length === 0).to.be.true;
   });
   it("Should not let user 1 buy too much tokens (more than 3%*10%=0.3% of total supply =3DWG)", async function () {
+    const {
+      dowgoERC20: lowdDowgoERC20,
+      addr1: lowAddr1,
+      usdcERC20: lowUSDCERC20,
+    } = await setupTestEnvDowgoERC20({
+      initialPrice: lowInitialPrice,
+      initialUSDCReserve: lowInitialUSDCReserve,
+      initialUser1USDCBalance: lowInitialUser1USDCBalance,
+      mockUSDCSupply: lowMockUSDCSupply,
+      initialDowgoSupply: lowInitialDowgoSupply,
+    });
+
     const BUY_AMOUNT_TOO_HIGH = BUY_AMOUNT.mul(4);
+
+    // Cost of buying dowgo with fee
+    const USDC_COST_NO_FEE_TOO_HIGH =
+      BUY_AMOUNT_TOO_HIGH.mul(lowInitialPrice).div(ONE_DOWGO_UNIT);
+    const USDC_FEE_TOO_HIGH =
+      USDC_COST_NO_FEE_TOO_HIGH.mul(transactionFee).div(10000);
+    const TOTAL_USDC_COST_TOO_HIGH =
+      USDC_COST_NO_FEE_TOO_HIGH.add(USDC_FEE_TOO_HIGH);
+
     try {
       // Approve erc20 transfer
       await approveTransfer(
-        usdcERC20,
-        addr1,
-        dowgoERC20.address,
-        BUY_AMOUNT_TOO_HIGH.mul(initialPrice).div(ONE_DOWGO_UNIT)
+        lowUSDCERC20,
+        lowAddr1,
+        lowdDowgoERC20.address,
+        TOTAL_USDC_COST_TOO_HIGH
       );
 
       // Create buy tx
-      const buyTx = await dowgoERC20
-        .connect(addr1)
+      const buyTx = await lowdDowgoERC20
+        .connect(lowAddr1)
         .buy_dowgo(BUY_AMOUNT_TOO_HIGH);
 
       // wait until the transaction is mined
@@ -214,18 +247,20 @@ describe("DowgoERC20 - buy", function () {
     }
 
     // check for user 1 dowgo balabnce
-    expect(await dowgoERC20.balanceOf(addr2.address)).to.equal(
+    expect(await lowdDowgoERC20.balanceOf(addr2.address)).to.equal(
       BigNumber.from(0)
     );
 
     // Check that supply of both USDC and Dowgo hasnt been changed
-    expect(await dowgoERC20.totalUSDCReserve()).to.equal(initialUSDCReserve);
-    expect(await dowgoERC20.totalSupply()).to.equal(initialDowgoSupply);
-    expect(await dowgoERC20.adminTreasury()).to.equal(BigNumber.from(0));
+    expect(await lowdDowgoERC20.totalUSDCReserve()).to.equal(
+      lowInitialUSDCReserve
+    );
+    expect(await lowdDowgoERC20.totalSupply()).to.equal(lowInitialDowgoSupply);
+    expect(await lowdDowgoERC20.adminTreasury()).to.equal(BigNumber.from(0));
 
     // check for BuyDowgo Event not fired
-    const eventFilter = dowgoERC20.filters.BuyDowgo(addr1.address);
-    let events = await dowgoERC20.queryFilter(eventFilter);
+    const eventFilter = lowdDowgoERC20.filters.BuyDowgo(lowAddr1.address);
+    let events = await lowdDowgoERC20.queryFilter(eventFilter);
     expect(events.length === 0).to.be.true;
   });
   it("Should let admin buy too much tokens (more than 3%*10%=0.3% of total supply =3DWG) using admin_buy", async function () {
