@@ -20,9 +20,7 @@ export const initialUSDCReserve = BigNumber.from(600000).mul(ONE_USDC_UNIT); // 
 export const mockUSDCSupply = BigNumber.from(10 ** 9).mul(ONE_USDC_UNIT); // initial suply of mock usdc is 1M
 
 // Initial USDC User amounts
-export const initialUser1USDCBalance = BigNumber.from(10 ** 5).mul(
-  ONE_USDC_UNIT
-);
+export const initialUser1USDCBalance = BigNumber.from(10 ** 5).mul(ONE_USDC_UNIT);
 
 export const initialEthBalance = BigNumber.from(10000).mul(ONE_ETH_UNIT);
 
@@ -39,8 +37,7 @@ export const lowInitialUSDCReserve = BigNumber.from(60).mul(ONE_USDC_UNIT); // i
 export const lowMockUSDCSupply = BigNumber.from(10 ** 6).mul(ONE_USDC_UNIT); // initial suply of mock usdc is 1M
 
 // Initial USDC User amounts
-export const lowInitialUser1USDCBalance =
-  BigNumber.from(100).mul(ONE_USDC_UNIT);
+export const lowInitialUser1USDCBalance = BigNumber.from(100).mul(ONE_USDC_UNIT);
 
 // Contract Settings
 export const lowInitPriceInteger = 2;

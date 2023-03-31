@@ -7,8 +7,6 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-import "hardhat/console.sol"; //TODO: get rid of this in prod
-
 contract DowgoERC20NoWhitelist is ERC20, AccessControl {
   using SafeMath for uint256;
 
@@ -37,43 +35,27 @@ contract DowgoERC20NoWhitelist is ERC20, AccessControl {
    *
    * Note that `value` may be zero.
    */
-  event BuyDowgo(
-    address indexed buyer,
-    uint256 dowgoAmount,
-    uint256 usdcAmount
-  );
+  event BuyDowgo(address indexed buyer, uint256 dowgoAmount, uint256 usdcAmount);
   /**
    * @dev Emitted when the admin buys dowgo tokens from the contract at targetRatio of the price
    *
    * Note that `value` may be zero.
    */
-  event AdminBuyDowgo(
-    address indexed buyer,
-    uint256 dowgoAmount,
-    uint256 usdcAmount
-  );
+  event AdminBuyDowgo(address indexed buyer, uint256 dowgoAmount, uint256 usdcAmount);
 
   /**
    * @dev Emitted when a user sells dowgo tokens back to the contract
    *
    * Note that `value` may be zero.
    */
-  event SellDowgo(
-    address indexed seller,
-    uint256 dowgoAmount,
-    uint256 usdcAmount
-  );
+  event SellDowgo(address indexed seller, uint256 dowgoAmount, uint256 usdcAmount);
 
   /**
    * @dev Emitted when the admin sells dowgo tokens back to the contract at targetRatio of the price
    *
    * Note that `value` may be zero.
    */
-  event AdminSellDowgo(
-    address indexed seller,
-    uint256 dowgoAmount,
-    uint256 usdcAmount
-  );
+  event AdminSellDowgo(address indexed seller, uint256 dowgoAmount, uint256 usdcAmount);
 
   /**
    * @dev Emitted when a user withdraws their USDC balance from the contract
@@ -132,28 +114,23 @@ contract DowgoERC20NoWhitelist is ERC20, AccessControl {
   // Buy Dowgo tokens by sending enough USDC
   function buy_dowgo(uint256 dowgoAmount) public returns (bool) {
     // USDC amount for the desired dowgo amount
-    uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18);
+    uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10 ** 18);
 
     // Check buying dowgo won't let the collateral ratio go above target+collRange
     uint256 targetUSDCCollateral = totalSupply()
       .add(dowgoAmount)
       .mul(currentPrice)
-      .div(10**18)
+      .div(10 ** 18)
       .mul(targetRatio)
-      .div(10**4);
+      .div(10 ** 4);
     require(
       totalUSDCReserve.add(usdcAmount) <
-        targetUSDCCollateral.mul(collRange).div(10**4).add(
-          targetUSDCCollateral
-        ),
+        targetUSDCCollateral.mul(collRange).div(10 ** 4).add(targetUSDCCollateral),
       "Contract already sold all dowgo tokens before next rebalancing"
     );
 
     // Check that the user has enough USDC allowance on the contract
-    require(
-      usdcAmount <= get_usdc_allowance(),
-      "Please approve tokens before transferring"
-    );
+    require(usdcAmount <= get_usdc_allowance(), "Please approve tokens before transferring");
 
     // Add USDC to the total reserve
     totalUSDCReserve = totalUSDCReserve.add(usdcAmount);
@@ -173,24 +150,14 @@ contract DowgoERC20NoWhitelist is ERC20, AccessControl {
   // Only requires targetRatio= 3% of real price
   // NB: this allows the admin to inflate the supply drastically for a <targetRatio>=3% of the price
   // Price update should be ran before
-  
-  function admin_buy_dowgo(uint256 dowgoAmount)
-    public
-    onlyRole(DEFAULT_ADMIN_ROLE)
-    returns (bool)
-  {
-    // USDC Amount is targetRatio % of real amount because the admin will increase USDC balance (and buy stocks) in FTX directly
-    uint256 usdcAmount = dowgoAmount
-      .mul(currentPrice)
-      .div(10**18)
-      .mul(targetRatio)
-      .div(10**4);
+
+  function admin_buy_dowgo(uint256 dowgoAmount) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+    // USDC Amount is targetRatio % of real amount because the admin will
+    // increase USDC balance (and buy stocks) in FTX directly
+    uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10 ** 18).mul(targetRatio).div(10 ** 4);
 
     // Check that the user has enough USDC allowance on the contract
-    require(
-      usdcAmount <= get_usdc_allowance(),
-      "Please approve tokens before transferring"
-    );
+    require(usdcAmount <= get_usdc_allowance(), "Please approve tokens before transferring");
 
     // Add USDC to the total reserve
     totalUSDCReserve = totalUSDCReserve.add(usdcAmount);
@@ -208,7 +175,7 @@ contract DowgoERC20NoWhitelist is ERC20, AccessControl {
 
   // Sell Dowgo tokens against ETH
   function sell_dowgo(uint256 dowgoAmount) public returns (bool) {
-    uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18);
+    uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10 ** 18);
 
     // Check that the user owns enough tokens
     require(balanceOf(msg.sender) >= dowgoAmount, "User doesn't own enough tokens to sell");
@@ -217,14 +184,12 @@ contract DowgoERC20NoWhitelist is ERC20, AccessControl {
     uint256 targetUSDCCollateral = totalSupply()
       .sub(dowgoAmount)
       .mul(currentPrice)
-      .div(10**18)
+      .div(10 ** 18)
       .mul(targetRatio)
-      .div(10**4);
+      .div(10 ** 4);
     require(
       totalUSDCReserve.sub(usdcAmount) >
-        targetUSDCCollateral.sub(
-          targetUSDCCollateral.mul(collRange).div(10**4)
-        ),
+        targetUSDCCollateral.sub(targetUSDCCollateral.mul(collRange).div(10 ** 4)),
       "Contract already bought all dowgo tokens before next rebalancing"
     );
 
@@ -243,15 +208,11 @@ contract DowgoERC20NoWhitelist is ERC20, AccessControl {
   }
 
   // Sell Dowgo tokens against ETH
-  function admin_sell_dowgo(uint256 dowgoAmount) public
-    onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+  function admin_sell_dowgo(
+    uint256 dowgoAmount
+  ) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
     // USDC Amount is targetRatio % of real amount because the admin will sell stocks in FTX directly
-    uint256 usdcAmount = dowgoAmount
-      .mul(currentPrice)
-      .div(10**18)
-      .mul(targetRatio)
-      .div(10**4);
-
+    uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10 ** 18).mul(targetRatio).div(10 ** 4);
 
     // Check that the user owns enough tokens
     require(balanceOf(msg.sender) >= dowgoAmount, "Admin doesn't own enough tokens to sell");
@@ -270,10 +231,7 @@ contract DowgoERC20NoWhitelist is ERC20, AccessControl {
   // Cash out available USDC balance for a user
   function withdraw_usdc(uint256 usdcAmount) public {
     // Check that the user owns enough USDC on the smart contract
-    require(
-      usdcAmount <= usdcUserBalances[msg.sender],
-      "User doesn't have that much USDC credit"
-    );
+    require(usdcAmount <= usdcUserBalances[msg.sender], "User doesn't have that much USDC credit");
 
     uint256 totalUsdcBalance = usdcToken.balanceOf(address(this));
     assert(usdcAmount <= totalUsdcBalance); //this shuold never error
@@ -288,10 +246,7 @@ contract DowgoERC20NoWhitelist is ERC20, AccessControl {
   }
 
   // Increase USDC reserve of the contract
-  function increase_usdc_reserve(uint256 usdcAmount)
-    public
-    onlyRole(DEFAULT_ADMIN_ROLE)
-  {
+  function increase_usdc_reserve(uint256 usdcAmount) public onlyRole(DEFAULT_ADMIN_ROLE) {
     // Effect
     // Add Eth to the total reserve
     totalUSDCReserve = totalUSDCReserve.add(usdcAmount);
@@ -304,21 +259,16 @@ contract DowgoERC20NoWhitelist is ERC20, AccessControl {
   }
 
   // Increase USDC reserve of the contract
-  function decrease_usdc_reserve(uint256 usdcAmount)
-    public
-    onlyRole(DEFAULT_ADMIN_ROLE)
-  {
+  function decrease_usdc_reserve(uint256 usdcAmount) public onlyRole(DEFAULT_ADMIN_ROLE) {
     // Check that this action won't let the collateral drop under target minus collRange
     uint256 targetUSDCCollateral = totalSupply()
       .mul(currentPrice)
-      .div(10**18)
+      .div(10 ** 18)
       .mul(targetRatio)
-      .div(10**4);
+      .div(10 ** 4);
     require(
       totalUSDCReserve.sub(usdcAmount) >=
-        targetUSDCCollateral.sub(
-          targetUSDCCollateral.mul(collRange).div(10**4)
-        ),
+        targetUSDCCollateral.sub(targetUSDCCollateral.mul(collRange).div(10 ** 4)),
       "Cannot go under min ratio for USDC reserves"
     );
 
@@ -330,10 +280,7 @@ contract DowgoERC20NoWhitelist is ERC20, AccessControl {
   }
 
   // Set Price
-  function set_current_price(uint256 newPrice)
-    public
-    onlyRole(DEFAULT_ADMIN_ROLE)
-  {
+  function set_current_price(uint256 newPrice) public onlyRole(DEFAULT_ADMIN_ROLE) {
     require(newPrice > 0, "Price must be >0");
 
     currentPrice = newPrice;

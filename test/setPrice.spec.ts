@@ -28,9 +28,7 @@ describe("DowgoERC20 - setPrice", function () {
     }));
   });
   it("Should let admin set price", async function () {
-    const setPriceTx = await dowgoERC20
-      .connect(dowgoAdmin)
-      .set_current_price(newPrice);
+    const setPriceTx = await dowgoERC20.connect(dowgoAdmin).set_current_price(newPrice);
 
     // wait until the transaction is mined
     await setPriceTx.wait();
@@ -41,15 +39,11 @@ describe("DowgoERC20 - setPrice", function () {
     // check for PriceSet Event
     const eventFilterOwner = dowgoERC20.filters.PriceSet(dowgoAdmin.address);
     let events = await dowgoERC20.queryFilter(eventFilterOwner);
-    expect(events[0] && events[0].args[1] && events[0].args[1]).to.equal(
-      newPrice
-    );
+    expect(events[0] && events[0].args[1] && events[0].args[1]).to.equal(newPrice);
   });
   it("Should not let non-admin address set price", async function () {
     try {
-      const setPriceTx = await dowgoERC20
-        .connect(addr1)
-        .set_current_price(newPrice);
+      const setPriceTx = await dowgoERC20.connect(addr1).set_current_price(newPrice);
 
       // wait until the transaction is mined
       await setPriceTx.wait();
@@ -69,9 +63,7 @@ describe("DowgoERC20 - setPrice", function () {
   });
   it("Should not let admin address set price to zero", async function () {
     try {
-      const setPriceTx = await dowgoERC20
-        .connect(dowgoAdmin)
-        .set_current_price(BigNumber.from(0));
+      const setPriceTx = await dowgoERC20.connect(dowgoAdmin).set_current_price(BigNumber.from(0));
 
       // wait until the transaction is mined
       await setPriceTx.wait();

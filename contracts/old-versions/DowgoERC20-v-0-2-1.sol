@@ -43,43 +43,27 @@ contract DowgoERC20V021 is ERC20, AccessControl {
    *
    * Note that `value` may be zero.
    */
-  event BuyDowgo(
-    address indexed buyer,
-    uint256 dowgoAmount,
-    uint256 usdcAmount
-  );
+  event BuyDowgo(address indexed buyer, uint256 dowgoAmount, uint256 usdcAmount);
   /**
    * @dev Emitted when the admin buys dowgo tokens from the contract at targetRatio of the price
    *
    * Note that `value` may be zero.
    */
-  event AdminBuyDowgo(
-    address indexed buyer,
-    uint256 dowgoAmount,
-    uint256 usdcAmount
-  );
+  event AdminBuyDowgo(address indexed buyer, uint256 dowgoAmount, uint256 usdcAmount);
 
   /**
    * @dev Emitted when a user sells dowgo tokens back to the contract
    *
    * Note that `value` may be zero.
    */
-  event SellDowgo(
-    address indexed seller,
-    uint256 dowgoAmount,
-    uint256 usdcAmount
-  );
+  event SellDowgo(address indexed seller, uint256 dowgoAmount, uint256 usdcAmount);
 
   /**
    * @dev Emitted when the admin sells dowgo tokens back to the contract at targetRatio of the price
    *
    * Note that `value` may be zero.
    */
-  event AdminSellDowgo(
-    address indexed seller,
-    uint256 dowgoAmount,
-    uint256 usdcAmount
-  );
+  event AdminSellDowgo(address indexed seller, uint256 dowgoAmount, uint256 usdcAmount);
 
   /**
    * @dev Emitted when a user withdraws their USDC balance from the contract
@@ -125,7 +109,7 @@ contract DowgoERC20V021 is ERC20, AccessControl {
     currentPrice = _initialPrice;
     targetRatio = _targetRatio;
     collRange = _collRange;
-    transactionFee=_transactionFee;
+    transactionFee = _transactionFee;
     _setupRole(WHITELISTED_ROLE, msg.sender);
     _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
   }
@@ -134,7 +118,7 @@ contract DowgoERC20V021 is ERC20, AccessControl {
 
   /// Grant a user the role of admin, must be a whitelisted user
   function grant_admin(address newAdmin) public onlyRole(DEFAULT_ADMIN_ROLE) {
-    _checkRole(WHITELISTED_ROLE,newAdmin);
+    _checkRole(WHITELISTED_ROLE, newAdmin);
     grantRole(DEFAULT_ADMIN_ROLE, newAdmin);
   }
 
@@ -151,7 +135,10 @@ contract DowgoERC20V021 is ERC20, AccessControl {
   /// Remove a user from the whitelist
   /// If it is an admin, their role as an admin must first be revoked
   function revoke_whitelist(address banishedUserFromWhitelist) public onlyRole(DEFAULT_ADMIN_ROLE) {
-    require(hasRole(DEFAULT_ADMIN_ROLE, banishedUserFromWhitelist)==false,"User must first be revoked the role of admin");
+    require(
+      hasRole(DEFAULT_ADMIN_ROLE, banishedUserFromWhitelist) == false,
+      "User must first be revoked the role of admin"
+    );
     revokeRole(WHITELISTED_ROLE, banishedUserFromWhitelist);
   }
 
@@ -163,31 +150,26 @@ contract DowgoERC20V021 is ERC20, AccessControl {
   /// Buy Dowgo tokens by sending enough USDC : price + transaction fee
   function buy_dowgo(uint256 dowgoAmount) public onlyRole(WHITELISTED_ROLE) returns (bool) {
     /// USDC amount for the desired dowgo amount
-    uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18);
+    uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10 ** 18);
 
     /// USDC fee for the desired dowgo amount
-    uint256 usdcFee = usdcAmount.mul(transactionFee).div(10**4);
+    uint256 usdcFee = usdcAmount.mul(transactionFee).div(10 ** 4);
 
     /// Check buying dowgo won't let the collateral ratio go above target+collRange
     uint256 targetUSDCCollateral = totalSupply()
       .add(dowgoAmount)
       .mul(currentPrice)
       .mul(targetRatio)
-      .div(10**18) /// div for dowgoAmount
-      .div(10**4); /// div for targetRatio
+      .div(10 ** 18)
+      .div(10 ** 4); /// div for dowgoAmount /// div for targetRatio
     require(
       totalUSDCReserve.add(usdcAmount) <
-        targetUSDCCollateral.mul(collRange).div(10**4).add(
-          targetUSDCCollateral
-        ),
+        targetUSDCCollateral.mul(collRange).div(10 ** 4).add(targetUSDCCollateral),
       "Contract already sold all dowgo tokens before next rebalancing"
     );
 
     /// Check that the user has enough USDC allowance on the contract
-    require(
-      usdcAmount <= get_usdc_allowance(),
-      "Please approve tokens before transferring"
-    );
+    require(usdcAmount <= get_usdc_allowance(), "Please approve tokens before transferring");
 
     /// Add USDC to the total reserve
     totalUSDCReserve = totalUSDCReserve.add(usdcAmount);
@@ -210,24 +192,13 @@ contract DowgoERC20V021 is ERC20, AccessControl {
   /// Only requires targetRatio of real price
   /// NB: this allows the admin to inflate the supply drastically for a <targetRatio> of the price
   /// Price update should be ran before
-  
-  function admin_buy_dowgo(uint256 dowgoAmount)
-    public
-    onlyRole(DEFAULT_ADMIN_ROLE)
-    returns (bool)
-  {
+
+  function admin_buy_dowgo(uint256 dowgoAmount) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
     /// USDC Amount is targetRatio % of real amount because the admin will increase USDC balance (and buy stocks) in FTX directly
-    uint256 usdcAmount = dowgoAmount
-      .mul(currentPrice)
-      .mul(targetRatio)
-      .div(10**18) /// div for dowgoAmount
-      .div(10**4); /// div for targetRatio
+    uint256 usdcAmount = dowgoAmount.mul(currentPrice).mul(targetRatio).div(10 ** 18).div(10 ** 4); /// div for dowgoAmount /// div for targetRatio
 
     /// Check that the user has enough USDC allowance on the contract
-    require(
-      usdcAmount <= get_usdc_allowance(),
-      "Please approve tokens before transferring"
-    );
+    require(usdcAmount <= get_usdc_allowance(), "Please approve tokens before transferring");
 
     /// Add USDC to the total reserve
     totalUSDCReserve = totalUSDCReserve.add(usdcAmount);
@@ -245,7 +216,7 @@ contract DowgoERC20V021 is ERC20, AccessControl {
 
   /// Sell Dowgo tokens against USDC
   function sell_dowgo(uint256 dowgoAmount) public returns (bool) {
-    uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18);
+    uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10 ** 18);
 
     /// Check that the user owns enough tokens
     require(balanceOf(msg.sender) >= dowgoAmount, "User doesn't own enough tokens to sell");
@@ -255,13 +226,11 @@ contract DowgoERC20V021 is ERC20, AccessControl {
       .sub(dowgoAmount)
       .mul(currentPrice)
       .mul(targetRatio)
-      .div(10**18) /// div for dowgoAmount
-      .div(10**4); /// div for targetRatio
+      .div(10 ** 18)
+      .div(10 ** 4); /// div for dowgoAmount /// div for targetRatio
     require(
       totalUSDCReserve.sub(usdcAmount) >
-        targetUSDCCollateral.sub(
-          targetUSDCCollateral.mul(collRange).div(10**4)
-        ),
+        targetUSDCCollateral.sub(targetUSDCCollateral.mul(collRange).div(10 ** 4)),
       "Contract already bought all dowgo tokens before next rebalancing"
     );
 
@@ -282,21 +251,19 @@ contract DowgoERC20V021 is ERC20, AccessControl {
   /// Force Sell Dowgo tokens against USDC for a user (from the admin)
   /// This is used when a user has been blacklisted from Dowgo
   function force_sell_dowgo(address user) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
-    uint256 dowgoAmount=balanceOf(user);
-    uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18);
+    uint256 dowgoAmount = balanceOf(user);
+    uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10 ** 18);
 
     /// Check selling dowgo won't let the collateral ratio go under target minus collRange
     uint256 targetUSDCCollateral = totalSupply()
       .sub(dowgoAmount)
       .mul(currentPrice)
       .mul(targetRatio)
-      .div(10**18) /// div for dowgoAmount
-      .div(10**4); /// div for targetRatio
+      .div(10 ** 18)
+      .div(10 ** 4); /// div for dowgoAmount /// div for targetRatio
     require(
       totalUSDCReserve.sub(usdcAmount) >
-        targetUSDCCollateral.sub(
-          targetUSDCCollateral.mul(collRange).div(10**4)
-        ),
+        targetUSDCCollateral.sub(targetUSDCCollateral.mul(collRange).div(10 ** 4)),
       "Contract already bought all dowgo tokens before next rebalancing"
     );
 
@@ -318,15 +285,11 @@ contract DowgoERC20V021 is ERC20, AccessControl {
   /// Only requires targetRatio of real price
   /// NB: this allows the admin to deflate the supply drastically for a <targetRatio> of the price
   /// Price update should be ran before
-  function admin_sell_dowgo(uint256 dowgoAmount) public
-    onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+  function admin_sell_dowgo(
+    uint256 dowgoAmount
+  ) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
     /// USDC Amount is targetRatio % of real amount because the admin will sell stocks in FTX directly
-    uint256 usdcAmount = dowgoAmount
-      .mul(currentPrice)
-      .mul(targetRatio)
-      .div(10**18) /// div for dowgoAmount
-      .div(10**4); /// div for targetRatio
-
+    uint256 usdcAmount = dowgoAmount.mul(currentPrice).mul(targetRatio).div(10 ** 18).div(10 ** 4); /// div for dowgoAmount /// div for targetRatio
 
     /// Check that the user owns enough tokens
     require(balanceOf(msg.sender) >= dowgoAmount, "Admin doesn't own enough tokens to sell");
@@ -345,10 +308,7 @@ contract DowgoERC20V021 is ERC20, AccessControl {
   /// Cash out available USDC balance for a user
   function withdraw_usdc(uint256 usdcAmount) public {
     /// Check that the user owns enough USDC on the smart contract
-    require(
-      usdcAmount <= usdcUserBalances[msg.sender],
-      "User doesn't have that much USDC credit"
-    );
+    require(usdcAmount <= usdcUserBalances[msg.sender], "User doesn't have that much USDC credit");
 
     /// Check that contract owns enough USDC, this should never error
     uint256 totalUsdcBalance = usdcToken.balanceOf(address(this));
@@ -366,17 +326,14 @@ contract DowgoERC20V021 is ERC20, AccessControl {
   /// Withdraw USDC from Admin treasury (from fees)
   function withdraw_treasury(uint256 usdcAmount) public onlyRole(DEFAULT_ADMIN_ROLE) {
     /// Check that the treasury has enough USDC on the smart contract
-    require(
-      usdcAmount <= adminTreasury,
-      "Treasury doesn't have that much USDC"
-    );
+    require(usdcAmount <= adminTreasury, "Treasury doesn't have that much USDC");
 
     /// Check that contract owns enough USDC, this should never error
     uint256 totalUsdcBalance = usdcToken.balanceOf(address(this));
     assert(usdcAmount <= totalUsdcBalance);
 
     /// Substract Amount from Treasury
-   adminTreasury = adminTreasury.sub(usdcAmount);
+    adminTreasury = adminTreasury.sub(usdcAmount);
 
     ///interactions ///TODO: check return value?
     bool sent = usdcToken.transfer(msg.sender, usdcAmount);
@@ -385,10 +342,7 @@ contract DowgoERC20V021 is ERC20, AccessControl {
   }
 
   /// Increase USDC reserve of the contract
-  function increase_usdc_reserve(uint256 usdcAmount)
-    public
-    onlyRole(DEFAULT_ADMIN_ROLE)
-  {
+  function increase_usdc_reserve(uint256 usdcAmount) public onlyRole(DEFAULT_ADMIN_ROLE) {
     /// Effect
     /// Add USDC to the total reserve
     totalUSDCReserve = totalUSDCReserve.add(usdcAmount);
@@ -401,21 +355,16 @@ contract DowgoERC20V021 is ERC20, AccessControl {
   }
 
   /// Decrease USDC reserve of the contract
-  function decrease_usdc_reserve(uint256 usdcAmount)
-    public
-    onlyRole(DEFAULT_ADMIN_ROLE)
-  {
+  function decrease_usdc_reserve(uint256 usdcAmount) public onlyRole(DEFAULT_ADMIN_ROLE) {
     /// Check that this action won't let the collateral drop under target minus collRange
     uint256 targetUSDCCollateral = totalSupply()
       .mul(currentPrice)
       .mul(targetRatio)
-      .div(10**18) /// div for dowgoAmount
-      .div(10**4); /// div for targetRatio
+      .div(10 ** 18)
+      .div(10 ** 4); /// div for dowgoAmount /// div for targetRatio
     require(
       totalUSDCReserve.sub(usdcAmount) >=
-        targetUSDCCollateral.sub(
-          targetUSDCCollateral.mul(collRange).div(10**4)
-        ),
+        targetUSDCCollateral.sub(targetUSDCCollateral.mul(collRange).div(10 ** 4)),
       "Cannot go under min ratio for USDC reserves"
     );
 
@@ -427,65 +376,65 @@ contract DowgoERC20V021 is ERC20, AccessControl {
   }
 
   /// Set Price
-  function set_current_price(uint256 newPrice)
-    public
-    onlyRole(DEFAULT_ADMIN_ROLE)
-  {
+  function set_current_price(uint256 newPrice) public onlyRole(DEFAULT_ADMIN_ROLE) {
     require(newPrice > 0, "Price must be >0");
 
     currentPrice = newPrice;
     emit PriceSet(msg.sender, newPrice);
   }
 
+  /**
+   *
+   * @dev Overrides the Openzeppelin ERC20 function to restrict transfers between restricted users
+   *
+   *
+   * @dev See {IERC20-transfer}.
+   *
+   * Requirements:
+   *
+   * - `to` cannot be the zero address and must be whitelisted
+   * - the caller must have a balance of at least `amount`.
+   */
+  function transfer(
+    address to,
+    uint256 amount
+  ) public virtual override onlyRole(WHITELISTED_ROLE) returns (bool) {
+    require(hasRole(WHITELISTED_ROLE, to), "You can only transfer DWG to whitelisted users");
+    address owner = _msgSender();
+    _transfer(owner, to, amount);
+    return true;
+  }
 
-    /**
-     * 
-     * @dev Overrides the Openzeppelin ERC20 function to restrict transfers between restricted users
-     * 
-     * 
-     * @dev See {IERC20-transfer}.
-     *
-     * Requirements:
-     *
-     * - `to` cannot be the zero address and must be whitelisted
-     * - the caller must have a balance of at least `amount`.
-     */
-    function transfer(address to, uint256 amount) public virtual override onlyRole(WHITELISTED_ROLE) returns (bool) {
-        require(hasRole(WHITELISTED_ROLE,to),"You can only transfer DWG to whitelisted users");
-        address owner = _msgSender();
-        _transfer(owner, to, amount);
-        return true;
-    }
-    /**
-     * 
-     * @dev Overrides the Openzeppelin ERC20 function to restrict transfers between restricted users
-     * 
-     * 
-     * @dev See {IERC20-transferFrom}.
-     *
-     * Emits an {Approval} event indicating the updated allowance. This is not
-     * required by the EIP. See the note at the beginning of {ERC20}.
-     *
-     * NOTE: Does not update the allowance if the current allowance
-     * is the maximum `uint256`.
-     *
-     * Requirements:
-     *
-     * - `from` and `to` cannot be the zero address and must both be whitelisted
-     * - `from` must have a balance of at least `amount`.
-     * - the caller must have allowance for ``from``'s tokens of at least
-     * `amount`.
-     */
-    function transferFrom(
-        address from,
-        address to,
-        uint256 amount
-    ) public virtual override returns (bool) {
-        require(hasRole(WHITELISTED_ROLE,from),"You can only transfer DWG from whitelisted users");
-        require(hasRole(WHITELISTED_ROLE,to),"You can only transfer DWG to whitelisted users");
-        address spender = _msgSender();
-        _spendAllowance(from, spender, amount);
-        _transfer(from, to, amount);
-        return true;
-    }
+  /**
+   *
+   * @dev Overrides the Openzeppelin ERC20 function to restrict transfers between restricted users
+   *
+   *
+   * @dev See {IERC20-transferFrom}.
+   *
+   * Emits an {Approval} event indicating the updated allowance. This is not
+   * required by the EIP. See the note at the beginning of {ERC20}.
+   *
+   * NOTE: Does not update the allowance if the current allowance
+   * is the maximum `uint256`.
+   *
+   * Requirements:
+   *
+   * - `from` and `to` cannot be the zero address and must both be whitelisted
+   * - `from` must have a balance of at least `amount`.
+   * - the caller must have allowance for ``from``'s tokens of at least
+   * `amount`.
+   */
+  function transferFrom(
+    address from,
+    address to,
+    uint256 amount
+  ) public virtual override returns (bool) {
+    require(hasRole(WHITELISTED_ROLE, from), "You can only transfer DWG from whitelisted users");
+    require(hasRole(WHITELISTED_ROLE, to), "You can only transfer DWG to whitelisted users");
+    address spender = _msgSender();
+    _spendAllowance(from, spender, amount);
+    _transfer(from, to, amount);
+    return true;
+  }
 }

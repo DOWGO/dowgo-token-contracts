@@ -49,8 +49,9 @@ async function main() {
   // TODO: different script for Alpha
 
   // deploy mock USDC contract from usdcCreator address
-  const ERC20Factory: ERC20PresetFixedSupply__factory =
-    await ethers.getContractFactory("ERC20PresetFixedSupply");
+  const ERC20Factory: ERC20PresetFixedSupply__factory = await ethers.getContractFactory(
+    "ERC20PresetFixedSupply"
+  );
   usdcERC20 = await ERC20Factory.connect(usdcCreator).deploy(
     "USDC",
     "USDC",
@@ -60,32 +61,21 @@ async function main() {
   usdcERC20 = await usdcERC20.deployed();
 
   // Send 100 USDC to user 1
-  await approveTransfer(
-    usdcERC20,
-    usdcCreator,
-    addr1.address,
-    initialUser1USDCBalance
-  );
+  await approveTransfer(usdcERC20, usdcCreator, addr1.address, initialUser1USDCBalance);
   const sendToUser1Tx = await usdcERC20
     .connect(usdcCreator)
     .transfer(addr1.address, initialUser1USDCBalance);
   await sendToUser1Tx.wait();
 
   // Send 2000 USDC to dowgoAdmin
-  await approveTransfer(
-    usdcERC20,
-    usdcCreator,
-    dowgoAdmin.address,
-    initialUSDCReserve
-  );
+  await approveTransfer(usdcERC20, usdcCreator, dowgoAdmin.address, initialUSDCReserve);
   const sendToOwnerTx = await usdcERC20
     .connect(usdcCreator)
     .transfer(dowgoAdmin.address, initialUSDCReserve.mul(2));
   await sendToOwnerTx.wait();
 
   // deploy contract
-  const DowgoERC20Factory: DowgoERC20__factory =
-    await ethers.getContractFactory("DowgoERC20");
+  const DowgoERC20Factory: DowgoERC20__factory = await ethers.getContractFactory("DowgoERC20");
   dowgoERC20 = await DowgoERC20Factory.connect(dowgoAdmin).deploy(
     initialPrice,
     initRatio,
@@ -96,15 +86,8 @@ async function main() {
   await dowgoERC20.deployed();
 
   // increase total reserve by 30 USDC, buys 1000 dowgo for the admin
-  await approveTransfer(
-    usdcERC20,
-    dowgoAdmin,
-    dowgoERC20.address,
-    initialUSDCReserve
-  );
-  const increaseTx = await dowgoERC20
-    .connect(dowgoAdmin)
-    .admin_buy_dowgo(initialDowgoSupply);
+  await approveTransfer(usdcERC20, dowgoAdmin, dowgoERC20.address, initialUSDCReserve);
+  const increaseTx = await dowgoERC20.connect(dowgoAdmin).admin_buy_dowgo(initialDowgoSupply);
   await increaseTx.wait();
 
   console.log("mockERC20 deployed to:", usdcERC20.address);

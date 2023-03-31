@@ -1,15 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers, network } from "hardhat";
-import {
-  collRange,
-  // initialDowgoSupply,
-  // initialPrice,
-  // initialUSDCReserve,
-  // initialUser1USDCBalance,
-  initRatio,
-  // mockUSDCSupply,
-  transactionFee,
-} from "../test-constants";
+import { collRange, initRatio, transactionFee } from "../test-constants";
 
 import {
   DowgoERC20,
@@ -17,11 +8,7 @@ import {
   ERC20PresetFixedSupply__factory,
   ERC20PresetFixedSupply,
 } from "../../typechain";
-import {
-  approveAndSendUSDC,
-  increaseDowgoSupply,
-  whitelistUser,
-} from "./tx-utils";
+import { approveAndSendUSDC, increaseDowgoSupply, whitelistUser } from "./tx-utils";
 import { BigNumber } from "ethers";
 
 interface SetupInputs {
@@ -60,8 +47,9 @@ export const setupTestEnvDowgoERC20 = async (setupInputs: SetupInputs) => {
   [dowgoAdmin, usdcCreator, addr1, addr2, addr3] = await ethers.getSigners();
 
   // deploy mock USDC contract from usdcCreator address
-  const ERC20Factory: ERC20PresetFixedSupply__factory =
-    await ethers.getContractFactory("ERC20PresetFixedSupply");
+  const ERC20Factory: ERC20PresetFixedSupply__factory = await ethers.getContractFactory(
+    "ERC20PresetFixedSupply"
+  );
   usdcERC20 = await ERC20Factory.connect(usdcCreator).deploy(
     "USDC",
     "USDC",
@@ -71,32 +59,18 @@ export const setupTestEnvDowgoERC20 = async (setupInputs: SetupInputs) => {
   usdcERC20 = await usdcERC20.deployed();
 
   // Send 100 USDC to user 1
-  await approveAndSendUSDC(
-    usdcERC20,
-    usdcCreator,
-    addr1.address,
-    initialUser1USDCBalance
-  );
+  await approveAndSendUSDC(usdcERC20, usdcCreator, addr1.address, initialUser1USDCBalance);
 
   // Send 100 USDC to user 3
-  await approveAndSendUSDC(
-    usdcERC20,
-    usdcCreator,
-    addr3.address,
-    initialUser1USDCBalance
-  );
+  await approveAndSendUSDC(usdcERC20, usdcCreator, addr3.address, initialUser1USDCBalance);
 
   // Send initialUSDCReserve * 2 USDC to dowgoAdmin
-  await approveAndSendUSDC(
-    usdcERC20,
-    usdcCreator,
-    dowgoAdmin.address,
-    initialUSDCReserve.mul(2)
-  );
+  await approveAndSendUSDC(usdcERC20, usdcCreator, dowgoAdmin.address, initialUSDCReserve.mul(2));
 
   // Deploy Dowgo ERC20 Contract
-  const DowgoERC20WhitelistedFactory: DowgoERC20__factory =
-    await ethers.getContractFactory("DowgoERC20");
+  const DowgoERC20WhitelistedFactory: DowgoERC20__factory = await ethers.getContractFactory(
+    "DowgoERC20"
+  );
   dowgoERC20 = await DowgoERC20WhitelistedFactory.connect(dowgoAdmin).deploy(
     initialPrice,
     initRatio,
@@ -107,12 +81,7 @@ export const setupTestEnvDowgoERC20 = async (setupInputs: SetupInputs) => {
   await dowgoERC20.deployed();
 
   // increase total reserve by 30 USDC, buys 1000 dowgo for the admin
-  await increaseDowgoSupply(
-    usdcERC20,
-    dowgoERC20,
-    dowgoAdmin,
-    initialDowgoSupply
-  );
+  await increaseDowgoSupply(usdcERC20, dowgoERC20, dowgoAdmin, initialDowgoSupply);
 
   // whitelist user 1 and 2
   await whitelistUser(dowgoERC20, dowgoAdmin, addr1.address);

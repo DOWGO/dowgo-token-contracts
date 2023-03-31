@@ -9,7 +9,9 @@
     "deploy": "npx hardhat run scripts/deploy.ts",
     "deploy-local": "npx hardhat run scripts/deploy.ts --network localhost",
     "lint-with-eslint": "npx eslint '**/*.{js,ts}' --fix && npx prettier '**/*.{json,sol,md}' --write && npx solhint 'contracts/**/*.sol' --fix",
-    "lint": "npx prettier '**/*.{js,ts,md}' --write && npx solhint 'contracts/**/*.sol' --fix"
+    "lint": "npm run lint:js && npm run lint:sol",
+    "lint:js": "npx prettier --ignore-path .gitignore '**/*.{js,ts,md}' --write",
+    "lint:sol": "npx prettier --ignore-path .gitignore 'contracts/*.sol' --write && npx solhint 'contracts/*.sol' --fix"
   },
   "repository": {
     "type": "git",
@@ -47,7 +49,7 @@
     "hardhat-gas-reporter": "^1.0.8",
     "prettier": "^2.6.2",
     "prettier-plugin-solidity": "^1.0.0-beta.13",
-    "solhint": "^3.3.7",
+    "solhint": "^3.4.1",
     "solidity-coverage": "^0.7.20",
     "ts-node": "^10.7.0",
     "typechain": "^5.2.0",

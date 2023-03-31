@@ -6,8 +6,6 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-import "hardhat/console.sol"; //TODO: get rid of this in prod
-
 contract DowgoEthReserveERC20 is ERC20, AccessControl {
   using SafeMath for uint256;
 
@@ -68,9 +66,7 @@ contract DowgoEthReserveERC20 is ERC20, AccessControl {
    */
   event PriceSet(address indexed user, uint256 amount);
 
-  constructor(uint256 _initialPrice, uint256 _targetRatio)
-    ERC20("Dowgo", "DWG")
-  {
+  constructor(uint256 _initialPrice, uint256 _targetRatio) ERC20("Dowgo", "DWG") {
     currentPrice = _initialPrice;
     targetRatio = _targetRatio;
     _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -84,7 +80,7 @@ contract DowgoEthReserveERC20 is ERC20, AccessControl {
   // Buy Dowgo tokens by sending enough ETH // TODO: allow zero tsf?
   function buy_dowgo(uint256 dowgoAmount) external payable {
     // Check that the user sent enough ETH
-    require(msg.value >= dowgoAmount.mul(currentPrice).div(10**18));
+    require(msg.value >= dowgoAmount.mul(currentPrice).div(10 ** 18));
 
     // Add Eth to the total reserve
     totalEthSupply = totalEthSupply.add(msg.value); // TODO check balance dif?
@@ -96,7 +92,7 @@ contract DowgoEthReserveERC20 is ERC20, AccessControl {
 
   // Sell Dowgo tokens against ETH
   function sell_dowgo(uint256 dowgoAmount) external {
-    uint256 ethAmount = dowgoAmount.mul(currentPrice).div(10**18);
+    uint256 ethAmount = dowgoAmount.mul(currentPrice).div(10 ** 18);
     // Check that the user owns enough tokens
     require(balanceOf(msg.sender) >= dowgoAmount);
     //this should never happen, hence the asset
@@ -133,14 +129,11 @@ contract DowgoEthReserveERC20 is ERC20, AccessControl {
   }
 
   // Increase Eth reserve of the contract
-  function decrease_eth_supply(uint256 ethAmount)
-    external
-    onlyRole(DEFAULT_ADMIN_ROLE)
-  {
+  function decrease_eth_supply(uint256 ethAmount) external onlyRole(DEFAULT_ADMIN_ROLE) {
     // Check that this action won't let the collateral drop under the minimum ratio
     require(
       totalEthSupply.sub(ethAmount) >=
-        totalSupply().mul(currentPrice).div(10**18).mul(targetRatio).div(10**4),
+        totalSupply().mul(currentPrice).div(10 ** 18).mul(targetRatio).div(10 ** 4),
       "Cannot go under min ratio for eth reserves"
     );
 
@@ -152,10 +145,7 @@ contract DowgoEthReserveERC20 is ERC20, AccessControl {
   }
 
   // Set Price
-  function set_current_price(uint256 newPrice)
-    external
-    onlyRole(DEFAULT_ADMIN_ROLE)
-  {
+  function set_current_price(uint256 newPrice) external onlyRole(DEFAULT_ADMIN_ROLE) {
     require(newPrice > 0, "Price must be >0");
 
     currentPrice = newPrice;

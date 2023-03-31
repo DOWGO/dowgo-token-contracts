@@ -34,23 +34,17 @@ describe("DowgoERC20 - buy", function () {
   const TOTAL_USDC_COST = USDC_COST_NO_FEE.add(USDC_FEE);
 
   beforeEach(async () => {
-    ({ dowgoERC20, addr1, addr2, addr3, usdcERC20, dowgoAdmin } =
-      await setupTestEnvDowgoERC20({
-        initialPrice,
-        initialUSDCReserve,
-        initialUser1USDCBalance,
-        mockUSDCSupply,
-        initialDowgoSupply,
-      }));
+    ({ dowgoERC20, addr1, addr2, addr3, usdcERC20, dowgoAdmin } = await setupTestEnvDowgoERC20({
+      initialPrice,
+      initialUSDCReserve,
+      initialUser1USDCBalance,
+      mockUSDCSupply,
+      initialDowgoSupply,
+    }));
   });
   it("Should let first address buy dowgo token against usdc", async function () {
     // Approve erc20 transfer
-    await approveTransfer(
-      usdcERC20,
-      addr1,
-      dowgoERC20.address,
-      TOTAL_USDC_COST
-    );
+    await approveTransfer(usdcERC20, addr1, dowgoERC20.address, TOTAL_USDC_COST);
 
     // Create buy tx
     const buyTx = await dowgoERC20.connect(addr1).buy_dowgo(BUY_AMOUNT);
@@ -62,9 +56,7 @@ describe("DowgoERC20 - buy", function () {
     expect(await dowgoERC20.balanceOf(addr1.address)).to.equal(BUY_AMOUNT);
 
     // check for totalSupply
-    expect(await dowgoERC20.totalSupply()).to.equal(
-      BUY_AMOUNT.add(initialDowgoSupply)
-    );
+    expect(await dowgoERC20.totalSupply()).to.equal(BUY_AMOUNT.add(initialDowgoSupply));
 
     // check that user 1 owns 100-2=98 USDC
     expect(await usdcERC20.balanceOf(addr1.address)).to.equal(
@@ -75,28 +67,18 @@ describe("DowgoERC20 - buy", function () {
     expect(await usdcERC20.balanceOf(dowgoERC20.address)).to.equal(
       TOTAL_USDC_COST.add(initialUSDCReserve)
     );
-    expect(await dowgoERC20.totalUSDCReserve()).to.equal(
-      USDC_COST_NO_FEE.add(initialUSDCReserve)
-    );
+    expect(await dowgoERC20.totalUSDCReserve()).to.equal(USDC_COST_NO_FEE.add(initialUSDCReserve));
     expect(await dowgoERC20.adminTreasury()).to.equal(USDC_FEE);
 
     // check for Buy Event
     const eventFilter2 = dowgoERC20.filters.BuyDowgo(addr1.address);
     let events2 = await dowgoERC20.queryFilter(eventFilter2);
-    expect(events2[0] && events2[0].args[1] && events2[0].args[1]).to.equal(
-      BUY_AMOUNT
-    );
+    expect(events2[0] && events2[0].args[1] && events2[0].args[1]).to.equal(BUY_AMOUNT);
   });
   it("Should let first address buy dowgo token against usdc INFINITE ALLOWANCE", async function () {
-    const INFINITE_ALLOWANCE =
-      "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+    const INFINITE_ALLOWANCE = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
     // Approve erc20 transfer
-    await approveTransfer(
-      usdcERC20,
-      addr1,
-      dowgoERC20.address,
-      BigNumber.from(INFINITE_ALLOWANCE)
-    );
+    await approveTransfer(usdcERC20, addr1, dowgoERC20.address, BigNumber.from(INFINITE_ALLOWANCE));
 
     // Create buy tx
     const buyTx = await dowgoERC20.connect(addr1).buy_dowgo(BUY_AMOUNT);
@@ -108,9 +90,7 @@ describe("DowgoERC20 - buy", function () {
     expect(await dowgoERC20.balanceOf(addr1.address)).to.equal(BUY_AMOUNT);
 
     // check for totalSupply
-    expect(await dowgoERC20.totalSupply()).to.equal(
-      BUY_AMOUNT.add(initialDowgoSupply)
-    );
+    expect(await dowgoERC20.totalSupply()).to.equal(BUY_AMOUNT.add(initialDowgoSupply));
 
     // check that user 1 owns 100-2=98 USDC
     expect(await usdcERC20.balanceOf(addr1.address)).to.equal(
@@ -121,27 +101,18 @@ describe("DowgoERC20 - buy", function () {
     expect(await usdcERC20.balanceOf(dowgoERC20.address)).to.equal(
       TOTAL_USDC_COST.add(initialUSDCReserve)
     );
-    expect(await dowgoERC20.totalUSDCReserve()).to.equal(
-      USDC_COST_NO_FEE.add(initialUSDCReserve)
-    );
+    expect(await dowgoERC20.totalUSDCReserve()).to.equal(USDC_COST_NO_FEE.add(initialUSDCReserve));
     expect(await dowgoERC20.adminTreasury()).to.equal(USDC_FEE);
 
     // check for Buy Event
     const eventFilter2 = dowgoERC20.filters.BuyDowgo(addr1.address);
     let events2 = await dowgoERC20.queryFilter(eventFilter2);
-    expect(events2[0] && events2[0].args[1] && events2[0].args[1]).to.equal(
-      BUY_AMOUNT
-    );
+    expect(events2[0] && events2[0].args[1] && events2[0].args[1]).to.equal(BUY_AMOUNT);
   });
   it("Should not let user 2 who owns no USDC to buy dowgo", async function () {
     try {
       // Approve erc20 transfer
-      await approveTransfer(
-        usdcERC20,
-        addr2,
-        dowgoERC20.address,
-        TOTAL_USDC_COST
-      );
+      await approveTransfer(usdcERC20, addr2, dowgoERC20.address, TOTAL_USDC_COST);
 
       // Create buy tx
       const buyTx = await dowgoERC20.connect(addr2).buy_dowgo(BUY_AMOUNT);
@@ -154,9 +125,7 @@ describe("DowgoERC20 - buy", function () {
       );
     }
     // check for user 2 dowgo balabnce
-    expect(await dowgoERC20.balanceOf(addr2.address)).to.equal(
-      BigNumber.from(0)
-    );
+    expect(await dowgoERC20.balanceOf(addr2.address)).to.equal(BigNumber.from(0));
 
     // Check that USDC haven't been sent
     expect(await dowgoERC20.totalUSDCReserve()).to.equal(initialUSDCReserve);
@@ -170,12 +139,7 @@ describe("DowgoERC20 - buy", function () {
   it("Should not let user 3 - who isn't whitelisted - buy dowgo", async function () {
     try {
       // Approve erc20 transfer
-      await approveTransfer(
-        usdcERC20,
-        addr3,
-        dowgoERC20.address,
-        TOTAL_USDC_COST
-      );
+      await approveTransfer(usdcERC20, addr3, dowgoERC20.address, TOTAL_USDC_COST);
 
       // Create buy tx
       const buyTx = await dowgoERC20.connect(addr3).buy_dowgo(BUY_AMOUNT);
@@ -188,9 +152,7 @@ describe("DowgoERC20 - buy", function () {
       );
     }
     // check for user 3 dowgo balabnce
-    expect(await dowgoERC20.balanceOf(addr3.address)).to.equal(
-      BigNumber.from(0)
-    );
+    expect(await dowgoERC20.balanceOf(addr3.address)).to.equal(BigNumber.from(0));
 
     // Check that USDC supply hasn't changed
     expect(await dowgoERC20.totalUSDCReserve()).to.equal(initialUSDCReserve);
@@ -217,12 +179,9 @@ describe("DowgoERC20 - buy", function () {
     const BUY_AMOUNT_TOO_HIGH = BUY_AMOUNT.mul(4);
 
     // Cost of buying dowgo with fee
-    const USDC_COST_NO_FEE_TOO_HIGH =
-      BUY_AMOUNT_TOO_HIGH.mul(lowInitialPrice).div(ONE_DOWGO_UNIT);
-    const USDC_FEE_TOO_HIGH =
-      USDC_COST_NO_FEE_TOO_HIGH.mul(transactionFee).div(10000);
-    const TOTAL_USDC_COST_TOO_HIGH =
-      USDC_COST_NO_FEE_TOO_HIGH.add(USDC_FEE_TOO_HIGH);
+    const USDC_COST_NO_FEE_TOO_HIGH = BUY_AMOUNT_TOO_HIGH.mul(lowInitialPrice).div(ONE_DOWGO_UNIT);
+    const USDC_FEE_TOO_HIGH = USDC_COST_NO_FEE_TOO_HIGH.mul(transactionFee).div(10000);
+    const TOTAL_USDC_COST_TOO_HIGH = USDC_COST_NO_FEE_TOO_HIGH.add(USDC_FEE_TOO_HIGH);
 
     try {
       // Approve erc20 transfer
@@ -234,9 +193,7 @@ describe("DowgoERC20 - buy", function () {
       );
 
       // Create buy tx
-      const buyTx = await lowdDowgoERC20
-        .connect(lowAddr1)
-        .buy_dowgo(BUY_AMOUNT_TOO_HIGH);
+      const buyTx = await lowdDowgoERC20.connect(lowAddr1).buy_dowgo(BUY_AMOUNT_TOO_HIGH);
 
       // wait until the transaction is mined
       await buyTx.wait();
@@ -247,14 +204,10 @@ describe("DowgoERC20 - buy", function () {
     }
 
     // check for user 1 dowgo balabnce
-    expect(await lowdDowgoERC20.balanceOf(addr2.address)).to.equal(
-      BigNumber.from(0)
-    );
+    expect(await lowdDowgoERC20.balanceOf(addr2.address)).to.equal(BigNumber.from(0));
 
     // Check that supply of both USDC and Dowgo hasnt been changed
-    expect(await lowdDowgoERC20.totalUSDCReserve()).to.equal(
-      lowInitialUSDCReserve
-    );
+    expect(await lowdDowgoERC20.totalUSDCReserve()).to.equal(lowInitialUSDCReserve);
     expect(await lowdDowgoERC20.totalSupply()).to.equal(lowInitialDowgoSupply);
     expect(await lowdDowgoERC20.adminTreasury()).to.equal(BigNumber.from(0));
 
@@ -268,26 +221,16 @@ describe("DowgoERC20 - buy", function () {
     const BUY_AMOUNT_TOO_HIGH = BUY_AMOUNT.mul(51);
 
     // Cost of buying dowgo with fee
-    const USDC_COST_NO_FEE_TOO_HIGH =
-      BUY_AMOUNT_TOO_HIGH.mul(initialPrice).div(ONE_DOWGO_UNIT);
-    const USDC_FEE_TOO_HIGH =
-      USDC_COST_NO_FEE_TOO_HIGH.mul(transactionFee).div(10000);
-    const TOTAL_USDC_COST_TOO_HIGH =
-      USDC_COST_NO_FEE_TOO_HIGH.add(USDC_FEE_TOO_HIGH);
+    const USDC_COST_NO_FEE_TOO_HIGH = BUY_AMOUNT_TOO_HIGH.mul(initialPrice).div(ONE_DOWGO_UNIT);
+    const USDC_FEE_TOO_HIGH = USDC_COST_NO_FEE_TOO_HIGH.mul(transactionFee).div(10000);
+    const TOTAL_USDC_COST_TOO_HIGH = USDC_COST_NO_FEE_TOO_HIGH.add(USDC_FEE_TOO_HIGH);
 
     try {
       // Approve erc20 transfer
-      await approveTransfer(
-        usdcERC20,
-        addr1,
-        dowgoERC20.address,
-        TOTAL_USDC_COST_TOO_HIGH
-      );
+      await approveTransfer(usdcERC20, addr1, dowgoERC20.address, TOTAL_USDC_COST_TOO_HIGH);
 
       // Create buy tx
-      const buyTx = await dowgoERC20
-        .connect(addr1)
-        .buy_dowgo(BUY_AMOUNT_TOO_HIGH);
+      const buyTx = await dowgoERC20.connect(addr1).buy_dowgo(BUY_AMOUNT_TOO_HIGH);
 
       // wait until the transaction is mined
       await buyTx.wait();
@@ -298,9 +241,7 @@ describe("DowgoERC20 - buy", function () {
     }
 
     // check for user 1 dowgo balabnce
-    expect(await dowgoERC20.balanceOf(addr2.address)).to.equal(
-      BigNumber.from(0)
-    );
+    expect(await dowgoERC20.balanceOf(addr2.address)).to.equal(BigNumber.from(0));
 
     // Check that supply of both USDC and Dowgo hasnt been changed
     expect(await dowgoERC20.totalUSDCReserve()).to.equal(initialUSDCReserve);
@@ -325,9 +266,7 @@ describe("DowgoERC20 - buy", function () {
     );
 
     // Create buy tx
-    const buyTx = await dowgoERC20
-      .connect(dowgoAdmin)
-      .admin_buy_dowgo(BUY_AMOUNT_TOO_HIGH);
+    const buyTx = await dowgoERC20.connect(dowgoAdmin).admin_buy_dowgo(BUY_AMOUNT_TOO_HIGH);
 
     // wait until the transaction is mined
     await buyTx.wait();
@@ -364,8 +303,6 @@ describe("DowgoERC20 - buy", function () {
     // check for second admin Buy Event
     const eventFilter2 = dowgoERC20.filters.AdminBuyDowgo(dowgoAdmin.address);
     let events2 = await dowgoERC20.queryFilter(eventFilter2);
-    expect(events2[1] && events2[1].args[1] && events2[1].args[1]).to.equal(
-      BUY_AMOUNT_TOO_HIGH
-    );
+    expect(events2[1] && events2[1].args[1] && events2[1].args[1]).to.equal(BUY_AMOUNT_TOO_HIGH);
   });
 });
