@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
+// v 0.2.2 
 contract DowgoERC20 is ERC20, AccessControl {
   using SafeMath for uint256;
 
@@ -24,7 +25,7 @@ contract DowgoERC20 is ERC20, AccessControl {
   /// Transaction fee - % (out of 10k), every time a user mints/buys dowgo
   uint16 public transactionFee;
 
-  /// Price in USDC/Dowgo - same deciamls as USDC reserve
+  /// Price in USDC/Dowgo - same decimals as USDC reserve
   uint256 public currentPrice;
 
   /// Min collateral ratio out of total AUM, is a number out of 10k Example : For 3%, 300
@@ -120,7 +121,7 @@ contract DowgoERC20 is ERC20, AccessControl {
     uint16 _collRange,
     address _usdcTokenAddress,
     uint16 _transactionFee
-  ) ERC20("Dowgo", "DWG") {
+  ) ERC20("Dowgo", "DWG1") {
     usdcToken = IERC20(_usdcTokenAddress);
     currentPrice = _initialPrice;
     targetRatio = _targetRatio;
@@ -160,8 +161,23 @@ contract DowgoERC20 is ERC20, AccessControl {
     return usdcToken.allowance(msg.sender, address(this));
   }
 
+  //// Transactions
+
+
+  /// Check that a user won't go above the allowed 10k limit
+  function check_user_balance_limit(address user, uint256 addedBalance) internal view {
+    /// 10^4 for the 10k limit, 10^6 for the USDC decimals and 10^18 for the Dowgo token
+    require(
+      balanceOf(user).add(addedBalance).mul(currentPrice)<=10**28,
+      "User can't go above USD 10k limit"
+    );
+  }
+
   /// Buy Dowgo tokens by sending enough USDC : price + transaction fee
   function buy_dowgo(uint256 dowgoAmount) public onlyRole(WHITELISTED_ROLE) returns (bool) {
+    /// Check that the buyer's usd equivalent balance won't go above the allowed 10k limit
+    check_user_balance_limit(msg.sender,dowgoAmount);
+    
     /// USDC amount for the desired dowgo amount
     uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10**18);
 
@@ -451,7 +467,11 @@ contract DowgoERC20 is ERC20, AccessControl {
      * - the caller must have a balance of at least `amount`.
      */
     function transfer(address to, uint256 amount) public virtual override onlyRole(WHITELISTED_ROLE) returns (bool) {
+        /// Check that the reciever is whitelisted
         require(hasRole(WHITELISTED_ROLE,to),"You can only transfer DWG to whitelisted users");
+        /// Check that the buyer's usd equivalent balance won't go above the allowed 10k limit
+        check_user_balance_limit(to,amount);
+        /// Go ahead and do the transfer
         address owner = _msgSender();
         _transfer(owner, to, amount);
         return true;
@@ -481,6 +501,9 @@ contract DowgoERC20 is ERC20, AccessControl {
         address to,
         uint256 amount
     ) public virtual override returns (bool) {
+        /// Check that the buyer's usd equivalent balance won't go above the allowed 10k limit
+        check_user_balance_limit(to,amount);
+        /// Check whitelist status
         require(hasRole(WHITELISTED_ROLE,from),"You can only transfer DWG from whitelisted users");
         require(hasRole(WHITELISTED_ROLE,to),"You can only transfer DWG to whitelisted users");
         address spender = _msgSender();

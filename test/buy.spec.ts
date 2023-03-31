@@ -263,6 +263,55 @@ describe("DowgoERC20 - buy", function () {
     let events = await lowdDowgoERC20.queryFilter(eventFilter);
     expect(events.length === 0).to.be.true;
   });
+  it("Should not let user 1 buy too much tokens (more than 10k USD worth)", async function () {
+    // This is worth 200*51= 10,200 USD
+    const BUY_AMOUNT_TOO_HIGH = BUY_AMOUNT.mul(51);
+
+    // Cost of buying dowgo with fee
+    const USDC_COST_NO_FEE_TOO_HIGH =
+      BUY_AMOUNT_TOO_HIGH.mul(initialPrice).div(ONE_DOWGO_UNIT);
+    const USDC_FEE_TOO_HIGH =
+      USDC_COST_NO_FEE_TOO_HIGH.mul(transactionFee).div(10000);
+    const TOTAL_USDC_COST_TOO_HIGH =
+      USDC_COST_NO_FEE_TOO_HIGH.add(USDC_FEE_TOO_HIGH);
+
+    try {
+      // Approve erc20 transfer
+      await approveTransfer(
+        usdcERC20,
+        addr1,
+        dowgoERC20.address,
+        TOTAL_USDC_COST_TOO_HIGH
+      );
+
+      // Create buy tx
+      const buyTx = await dowgoERC20
+        .connect(addr1)
+        .buy_dowgo(BUY_AMOUNT_TOO_HIGH);
+
+      // wait until the transaction is mined
+      await buyTx.wait();
+    } catch (e: any) {
+      expect(e.toString()).to.equal(
+        `Error: VM Exception while processing transaction: reverted with reason string 'User can't go above USD 10k limit'`
+      );
+    }
+
+    // check for user 1 dowgo balabnce
+    expect(await dowgoERC20.balanceOf(addr2.address)).to.equal(
+      BigNumber.from(0)
+    );
+
+    // Check that supply of both USDC and Dowgo hasnt been changed
+    expect(await dowgoERC20.totalUSDCReserve()).to.equal(initialUSDCReserve);
+    expect(await dowgoERC20.totalSupply()).to.equal(initialDowgoSupply);
+    expect(await dowgoERC20.adminTreasury()).to.equal(BigNumber.from(0));
+
+    // check for BuyDowgo Event not fired
+    const eventFilter = dowgoERC20.filters.BuyDowgo(addr1.address);
+    let events = await dowgoERC20.queryFilter(eventFilter);
+    expect(events.length === 0).to.be.true;
+  });
   it("Should let admin buy too much tokens (more than 3%*10%=0.3% of total supply =3DWG) using admin_buy", async function () {
     let initialAdminUSDCBalance = await usdcERC20.balanceOf(dowgoAdmin.address);
     const BUY_AMOUNT_TOO_HIGH = initialDowgoSupply;
