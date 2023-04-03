@@ -10,6 +10,10 @@ import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 contract DowgoERC20 is ERC20, AccessControl {
   using SafeMath for uint256;
 
+  /// Constants
+  uint256 public constant TOTAL_USD_LIMIT_DOWGO = 8 * 10 ** 6; //(10**6).mul();
+  uint256 public constant TOTAL_USD_LIMIT_PER_USER = 10 ** 4;
+
   /// USDC token instance
   IERC20 private _usdcToken;
 
@@ -154,8 +158,18 @@ contract DowgoERC20 is ERC20, AccessControl {
   function _check_user_balance_limit(address user, uint256 addedBalance) internal view {
     /// 10^4 for the 10k limit, 10^6 for the USDC decimals and 10^18 for the Dowgo token
     require(
-      balanceOf(user).add(addedBalance).mul(currentPrice) <= 10 ** 28,
+      balanceOf(user).add(addedBalance).mul(currentPrice) <=
+        (TOTAL_USD_LIMIT_PER_USER).mul(10 ** 24),
       "User can't go above USD 10k limit"
+    );
+  }
+
+  /// Check that total dowgo supply won't go above the 8M usd limit
+  function _check_dowgo_usd_limit(uint256 addedBalance) internal view {
+    /// 10^4 for the 10k limit, 10^6 for the USDC decimals and 10^18 for the Dowgo token
+    require(
+      totalSupply().add(addedBalance).mul(currentPrice) <= (TOTAL_USD_LIMIT_DOWGO).mul(10 ** 24),
+      "Dowgo Supply shouldn't go above the 8M usd limit"
     );
   }
 
@@ -163,6 +177,8 @@ contract DowgoERC20 is ERC20, AccessControl {
   function buy_dowgo(uint256 dowgoAmount) public onlyRole(WHITELISTED_ROLE) returns (bool) {
     /// Check that the buyer's usd equivalent balance won't go above the allowed 10k limit
     _check_user_balance_limit(msg.sender, dowgoAmount);
+    /// Check that total dowgo supply won't go above the 8M usd limit
+    _check_dowgo_usd_limit(dowgoAmount);
 
     /// USDC amount for the desired dowgo amount
     uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10 ** 18);
@@ -209,6 +225,9 @@ contract DowgoERC20 is ERC20, AccessControl {
   /// Price update should be ran before
 
   function admin_buy_dowgo(uint256 dowgoAmount) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+    /// Check that total dowgo supply won't go above the 8M usd limit
+    _check_dowgo_usd_limit(dowgoAmount);
+
     /// USDC Amount is targetRatio % of real amount because the admin will increase USDC balance (and buy stocks) in FTX directly
     uint256 usdcAmount = dowgoAmount.mul(currentPrice).mul(targetRatio).div(10 ** 18).div(10 ** 4); /// div for dowgoAmount /// div for targetRatio
 

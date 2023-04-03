@@ -87,5 +87,5 @@ export const setupTestEnvDowgoERC20 = async (setupInputs: SetupInputs) => {
   await whitelistUser(dowgoERC20, dowgoAdmin, addr1.address);
   await whitelistUser(dowgoERC20, dowgoAdmin, addr2.address);
 
-  return { dowgoERC20, dowgoAdmin, addr1, addr2, addr3, usdcERC20 };
+  return { dowgoERC20, dowgoAdmin, addr1, addr2, addr3, usdcERC20, usdcCreator };
 };

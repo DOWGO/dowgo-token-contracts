@@ -15,8 +15,8 @@ export const WHITELISTED_ROLE = ethers.utils.keccak256(
 // ** High Amounts to test 10k limit **
 
 // Initial USDC amounts
-export const initialDowgoSupply = BigNumber.from(100000).mul(ONE_DOWGO_UNIT);
-export const initialUSDCReserve = BigNumber.from(600000).mul(ONE_USDC_UNIT); // initial USDC reserve in the SC is 30000
+export const initialDowgoSupply = BigNumber.from(10000).mul(ONE_DOWGO_UNIT);
+export const initialUSDCReserve = BigNumber.from(60000).mul(ONE_USDC_UNIT); // initial USDC reserve in the SC is 30000
 export const mockUSDCSupply = BigNumber.from(10 ** 9).mul(ONE_USDC_UNIT); // initial suply of mock usdc is 1M
 
 // Initial USDC User amounts

@@ -17,13 +17,15 @@ import {
   lowInitialUser1USDCBalance,
   lowMockUSDCSupply,
   lowInitialDowgoSupply,
+  ONE_USDC_UNIT,
 } from "./test-constants";
-import { approveTransfer, setupTestEnvDowgoERC20 } from "./testUtils";
+import { approveAndSendUSDC, approveTransfer, setupTestEnvDowgoERC20 } from "./testUtils";
 
 describe("DowgoERC20 - buy", function () {
   let dowgoERC20: DowgoERC20;
   let usdcERC20: ERC20;
   let dowgoAdmin: SignerWithAddress;
+  let usdcCreator: SignerWithAddress;
   let addr1: SignerWithAddress;
   let addr2: SignerWithAddress;
   let addr3: SignerWithAddress;
@@ -34,13 +36,14 @@ describe("DowgoERC20 - buy", function () {
   const TOTAL_USDC_COST = USDC_COST_NO_FEE.add(USDC_FEE);
 
   beforeEach(async () => {
-    ({ dowgoERC20, addr1, addr2, addr3, usdcERC20, dowgoAdmin } = await setupTestEnvDowgoERC20({
-      initialPrice,
-      initialUSDCReserve,
-      initialUser1USDCBalance,
-      mockUSDCSupply,
-      initialDowgoSupply,
-    }));
+    ({ dowgoERC20, addr1, addr2, addr3, usdcERC20, dowgoAdmin, usdcCreator } =
+      await setupTestEnvDowgoERC20({
+        initialPrice,
+        initialUSDCReserve,
+        initialUser1USDCBalance,
+        mockUSDCSupply,
+        initialDowgoSupply,
+      }));
   });
   it("Should let first address buy dowgo token against usdc", async function () {
     // Approve erc20 transfer
@@ -246,6 +249,98 @@ describe("DowgoERC20 - buy", function () {
     // Check that supply of both USDC and Dowgo hasnt been changed
     expect(await dowgoERC20.totalUSDCReserve()).to.equal(initialUSDCReserve);
     expect(await dowgoERC20.totalSupply()).to.equal(initialDowgoSupply);
+    expect(await dowgoERC20.adminTreasury()).to.equal(BigNumber.from(0));
+
+    // check for BuyDowgo Event not fired
+    const eventFilter = dowgoERC20.filters.BuyDowgo(addr1.address);
+    let events = await dowgoERC20.queryFilter(eventFilter);
+    expect(events.length === 0).to.be.true;
+  });
+  it("Should not let admin admin_buy too much tokens (more than 8M worth)", async function () {
+    // The initial minted amount is 2M usd. So minting 7M usd worth,
+    // meaning 7M/200=35k dwg should throw an error
+    const BUY_AMOUNT_ABOVE_LIMIT = BigNumber.from(35 * 1000).mul(ONE_DOWGO_UNIT);
+
+    // Cost of buying dowgo with fee
+    const USDC_COST_NO_FEE_TOO_HIGH = BUY_AMOUNT_ABOVE_LIMIT.mul(initialPrice).div(ONE_DOWGO_UNIT);
+    const USDC_FEE_TOO_HIGH = USDC_COST_NO_FEE_TOO_HIGH.mul(transactionFee).div(10000);
+    const TOTAL_USDC_COST_TOO_HIGH = USDC_COST_NO_FEE_TOO_HIGH.add(USDC_FEE_TOO_HIGH);
+
+    try {
+      // Send 7M usd to admin
+      await approveAndSendUSDC(
+        usdcERC20,
+        usdcCreator,
+        dowgoAdmin.address,
+        TOTAL_USDC_COST_TOO_HIGH
+      );
+      // Approve erc20 transfer
+      await approveTransfer(usdcERC20, dowgoAdmin, dowgoERC20.address, TOTAL_USDC_COST_TOO_HIGH);
+
+      // Create buy tx
+      const buyTx = await dowgoERC20.connect(dowgoAdmin).admin_buy_dowgo(BUY_AMOUNT_ABOVE_LIMIT);
+
+      // wait until the transaction is mined
+      await buyTx.wait();
+    } catch (e: any) {
+      expect(e.toString()).to.equal(
+        `Error: VM Exception while processing transaction: reverted with reason string 'Dowgo Supply shouldn't go above the 8M usd limit'`
+      );
+    }
+
+    // check for user 1 dowgo balabnce
+    expect(await dowgoERC20.balanceOf(addr2.address)).to.equal(BigNumber.from(0));
+
+    // Check that supply of both USDC and Dowgo hasnt been changed
+    expect(await dowgoERC20.totalUSDCReserve()).to.equal(initialUSDCReserve);
+    expect(await dowgoERC20.totalSupply()).to.equal(initialDowgoSupply);
+    expect(await dowgoERC20.adminTreasury()).to.equal(BigNumber.from(0));
+
+    // check for BuyDowgo Event not fired
+    const eventFilter = dowgoERC20.filters.BuyDowgo(addr1.address);
+    let events = await dowgoERC20.queryFilter(eventFilter);
+    expect(events.length === 0).to.be.true;
+  });
+  it("Should not let addr1 buy too much tokens (more than 8M worth)", async function () {
+    const ADMIN_BUY = BigNumber.from(29995).mul(ONE_DOWGO_UNIT);
+    const ADMIN_BUY_USD = ADMIN_BUY.mul(initialPrice).div(ONE_DOWGO_UNIT);
+    const BUY_AMOUNT_ABOVE_LIMIT = BigNumber.from(6).mul(ONE_DOWGO_UNIT);
+
+    // Cost of buying dowgo with fee
+    const USDC_COST_NO_FEE_TOO_HIGH = BUY_AMOUNT_ABOVE_LIMIT.mul(initialPrice).div(ONE_DOWGO_UNIT);
+    const USDC_FEE_TOO_HIGH = USDC_COST_NO_FEE_TOO_HIGH.mul(transactionFee).div(10000);
+    const TOTAL_USDC_COST_TOO_HIGH = USDC_COST_NO_FEE_TOO_HIGH.add(USDC_FEE_TOO_HIGH);
+
+    // Send 7M usd to admin
+    await approveAndSendUSDC(usdcERC20, usdcCreator, dowgoAdmin.address, ADMIN_BUY_USD);
+    // Approve erc20 transfer
+    await approveTransfer(usdcERC20, dowgoAdmin, dowgoERC20.address, ADMIN_BUY_USD);
+
+    // first admin_buy enough to bring it to 7.999 M usd, (7.999-2)/200= 29995 dwg
+    const buyAdminTx = await dowgoERC20.connect(dowgoAdmin).admin_buy_dowgo(ADMIN_BUY);
+    await buyAdminTx.wait();
+
+    try {
+      // Approve erc20 transfer
+      await approveTransfer(usdcERC20, addr1, dowgoERC20.address, TOTAL_USDC_COST_TOO_HIGH);
+
+      // Then buy 1200 usd worth of dwg: 6 dwg
+      // Create buy tx
+      const buyTx = await dowgoERC20.connect(addr1).buy_dowgo(BUY_AMOUNT_ABOVE_LIMIT);
+
+      // wait until the transaction is mined
+      await buyTx.wait();
+    } catch (e: any) {
+      expect(e.toString()).to.equal(
+        `Error: VM Exception while processing transaction: reverted with reason string 'Dowgo Supply shouldn't go above the 8M usd limit'`
+      );
+    }
+
+    // check for user 1 dowgo balabnce
+    expect(await dowgoERC20.balanceOf(addr1.address)).to.equal(BigNumber.from(0));
+
+    // Check that supply of both USDC and Dowgo hasnt been changed
+    expect(await dowgoERC20.totalSupply()).to.equal(initialDowgoSupply.add(ADMIN_BUY));
     expect(await dowgoERC20.adminTreasury()).to.equal(BigNumber.from(0));
 
     // check for BuyDowgo Event not fired
