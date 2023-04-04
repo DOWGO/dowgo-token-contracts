@@ -1,21 +1,16 @@
 ///SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.17;
 
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-// v 0.2.2
-contract DowgoERC20 is ERC20, AccessControl {
+contract DowgoERC20V021 is ERC20, AccessControl {
   using SafeMath for uint256;
 
-  /// Constants
-  uint256 public constant TOTAL_USD_LIMIT_DOWGO = 8 * 10 ** 6; //(10**6).mul();
-  uint256 public constant TOTAL_USD_LIMIT_PER_USER = 10 ** 4;
-
   /// USDC token instance
-  IERC20 private _usdcToken;
+  IERC20 usdcToken;
 
   //// Total reserve of USDC in the contract
   uint256 public totalUSDCReserve;
@@ -29,7 +24,7 @@ contract DowgoERC20 is ERC20, AccessControl {
   /// Transaction fee - % (out of 10k), every time a user mints/buys dowgo
   uint16 public transactionFee;
 
-  /// Price in USDC/Dowgo - same decimals as USDC reserve
+  /// Price in USDC/Dowgo - same deciamls as USDC reserve
   uint256 public currentPrice;
 
   /// Min collateral ratio out of total AUM, is a number out of 10k Example : For 3%, 300
@@ -107,10 +102,10 @@ contract DowgoERC20 is ERC20, AccessControl {
     uint256 _initialPrice,
     uint16 _targetRatio,
     uint16 _collRange,
-    address __usdcTokenAddress,
+    address _usdcTokenAddress,
     uint16 _transactionFee
-  ) public ERC20("Dowgo", "DWG1") {
-    _usdcToken = IERC20(__usdcTokenAddress);
+  ) ERC20("Dowgo", "DWG") {
+    usdcToken = IERC20(_usdcTokenAddress);
     currentPrice = _initialPrice;
     targetRatio = _targetRatio;
     collRange = _collRange;
@@ -149,37 +144,11 @@ contract DowgoERC20 is ERC20, AccessControl {
 
   /// Get user USDC Allowance to use this contract
   function get_usdc_allowance() public view returns (uint256) {
-    return _usdcToken.allowance(msg.sender, address(this));
-  }
-
-  //// Transactions
-
-  /// Check that a user won't go above the allowed 10k limit
-  function _check_user_balance_limit(address user, uint256 addedBalance) internal view {
-    /// 10^4 for the 10k limit, 10^6 for the USDC decimals and 10^18 for the Dowgo token
-    require(
-      balanceOf(user).add(addedBalance).mul(currentPrice) <=
-        (TOTAL_USD_LIMIT_PER_USER).mul(10 ** 24),
-      "User can't go above USD 10k limit"
-    );
-  }
-
-  /// Check that total dowgo supply won't go above the 8M usd limit
-  function _check_dowgo_usd_limit(uint256 addedBalance) internal view {
-    /// 10^4 for the 10k limit, 10^6 for the USDC decimals and 10^18 for the Dowgo token
-    require(
-      totalSupply().add(addedBalance).mul(currentPrice) <= (TOTAL_USD_LIMIT_DOWGO).mul(10 ** 24),
-      "Dowgo Supply shouldn't go above the 8M usd limit"
-    );
+    return usdcToken.allowance(msg.sender, address(this));
   }
 
   /// Buy Dowgo tokens by sending enough USDC : price + transaction fee
   function buy_dowgo(uint256 dowgoAmount) public onlyRole(WHITELISTED_ROLE) returns (bool) {
-    /// Check that the buyer's usd equivalent balance won't go above the allowed 10k limit
-    _check_user_balance_limit(msg.sender, dowgoAmount);
-    /// Check that total dowgo supply won't go above the 8M usd limit
-    _check_dowgo_usd_limit(dowgoAmount);
-
     /// USDC amount for the desired dowgo amount
     uint256 usdcAmount = dowgoAmount.mul(currentPrice).div(10 ** 18);
 
@@ -210,7 +179,7 @@ contract DowgoERC20 is ERC20, AccessControl {
 
     /// Interactions
     /// Send USDC to this contract
-    bool sent = _usdcToken.transferFrom(msg.sender, address(this), usdcAmount.add(usdcFee));
+    bool sent = usdcToken.transferFrom(msg.sender, address(this), usdcAmount.add(usdcFee));
     require(sent, "Failed to transfer USDC from user to dowgo smart contract"); ///TODO: test this with moch usdc
 
     /// Mint new dowgo tokens
@@ -225,9 +194,6 @@ contract DowgoERC20 is ERC20, AccessControl {
   /// Price update should be ran before
 
   function admin_buy_dowgo(uint256 dowgoAmount) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
-    /// Check that total dowgo supply won't go above the 8M usd limit
-    _check_dowgo_usd_limit(dowgoAmount);
-
     /// USDC Amount is targetRatio % of real amount because the admin will increase USDC balance (and buy stocks) in FTX directly
     uint256 usdcAmount = dowgoAmount.mul(currentPrice).mul(targetRatio).div(10 ** 18).div(10 ** 4); /// div for dowgoAmount /// div for targetRatio
 
@@ -239,7 +205,7 @@ contract DowgoERC20 is ERC20, AccessControl {
 
     /// Interactions
     /// Send USDC to this contract
-    bool sent = _usdcToken.transferFrom(msg.sender, address(this), usdcAmount);
+    bool sent = usdcToken.transferFrom(msg.sender, address(this), usdcAmount);
     require(sent, "Failed to transfer USDC from user to dowgo smart contract");
 
     /// Mint new dowgo tokens
@@ -345,14 +311,14 @@ contract DowgoERC20 is ERC20, AccessControl {
     require(usdcAmount <= usdcUserBalances[msg.sender], "User doesn't have that much USDC credit");
 
     /// Check that contract owns enough USDC, this should never error
-    uint256 totalUsdcBalance = _usdcToken.balanceOf(address(this));
+    uint256 totalUsdcBalance = usdcToken.balanceOf(address(this));
     assert(usdcAmount <= totalUsdcBalance);
 
     /// Substract User balance
     usdcUserBalances[msg.sender] = usdcUserBalances[msg.sender].sub(usdcAmount);
 
     ///interactions ///TODO: check return value?
-    bool sent = _usdcToken.transfer(msg.sender, usdcAmount);
+    bool sent = usdcToken.transfer(msg.sender, usdcAmount);
     require(sent, "Failed to withdraw USDC to user"); ///TODO: test this with mock usdc
     emit WithdrawUSDC(msg.sender, usdcAmount);
   }
@@ -363,14 +329,14 @@ contract DowgoERC20 is ERC20, AccessControl {
     require(usdcAmount <= adminTreasury, "Treasury doesn't have that much USDC");
 
     /// Check that contract owns enough USDC, this should never error
-    uint256 totalUsdcBalance = _usdcToken.balanceOf(address(this));
+    uint256 totalUsdcBalance = usdcToken.balanceOf(address(this));
     assert(usdcAmount <= totalUsdcBalance);
 
     /// Substract Amount from Treasury
     adminTreasury = adminTreasury.sub(usdcAmount);
 
     ///interactions ///TODO: check return value?
-    bool sent = _usdcToken.transfer(msg.sender, usdcAmount);
+    bool sent = usdcToken.transfer(msg.sender, usdcAmount);
     require(sent, "Failed to withdraw USDC treasury to admin"); ///TODO: test this with mock usdc
     emit WithdrawUSDCTreasury(msg.sender, usdcAmount);
   }
@@ -383,7 +349,7 @@ contract DowgoERC20 is ERC20, AccessControl {
 
     ///Interation
     /// Send USDC to this contract
-    _usdcToken.transferFrom(msg.sender, address(this), usdcAmount);
+    usdcToken.transferFrom(msg.sender, address(this), usdcAmount);
 
     emit USDCSupplyIncreased(msg.sender, usdcAmount);
   }
@@ -433,11 +399,7 @@ contract DowgoERC20 is ERC20, AccessControl {
     address to,
     uint256 amount
   ) public virtual override onlyRole(WHITELISTED_ROLE) returns (bool) {
-    /// Check that the reciever is whitelisted
     require(hasRole(WHITELISTED_ROLE, to), "You can only transfer DWG to whitelisted users");
-    /// Check that the buyer's usd equivalent balance won't go above the allowed 10k limit
-    _check_user_balance_limit(to, amount);
-    /// Go ahead and do the transfer
     address owner = _msgSender();
     _transfer(owner, to, amount);
     return true;
@@ -468,9 +430,6 @@ contract DowgoERC20 is ERC20, AccessControl {
     address to,
     uint256 amount
   ) public virtual override returns (bool) {
-    /// Check that the buyer's usd equivalent balance won't go above the allowed 10k limit
-    _check_user_balance_limit(to, amount);
-    /// Check whitelist status
     require(hasRole(WHITELISTED_ROLE, from), "You can only transfer DWG from whitelisted users");
     require(hasRole(WHITELISTED_ROLE, to), "You can only transfer DWG to whitelisted users");
     address spender = _msgSender();

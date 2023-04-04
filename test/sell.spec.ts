@@ -9,6 +9,12 @@ import {
   initialUSDCReserve,
   initialUser1USDCBalance,
   initRatio,
+  lowInitialDowgoSupply,
+  lowInitialPrice,
+  lowInitialUSDCReserve,
+  lowInitialUser1USDCBalance,
+  lowMockUSDCSupply,
+  mockUSDCSupply,
   ONE_DOWGO_UNIT,
   transactionFee,
 } from "./test-constants";
@@ -29,16 +35,16 @@ describe("DowgoERC20 - sell", function () {
 
   // buy tokens before selling them
   beforeEach(async () => {
-    ({ dowgoERC20, addr1, addr2, usdcERC20, dowgoAdmin } =
-      await setupTestEnvDowgoERC20());
+    ({ dowgoERC20, addr1, addr2, usdcERC20, dowgoAdmin } = await setupTestEnvDowgoERC20({
+      initialPrice,
+      initialUSDCReserve,
+      initialUser1USDCBalance,
+      mockUSDCSupply,
+      initialDowgoSupply,
+    }));
 
     // Approve erc20 transfer
-    await approveTransfer(
-      usdcERC20,
-      addr1,
-      dowgoERC20.address,
-      TOTAL_USDC_COST
-    );
+    await approveTransfer(usdcERC20, addr1, dowgoERC20.address, TOTAL_USDC_COST);
     // buy
     const buyTx = await dowgoERC20.connect(addr1).buy_dowgo(SELL_AMOUNT);
 
@@ -54,34 +60,24 @@ describe("DowgoERC20 - sell", function () {
       // check for Sell Event
       const eventFilter = dowgoERC20.filters.SellDowgo(addr1.address);
       let events = await dowgoERC20.queryFilter(eventFilter);
-      expect(events[0] && events[0].args[1] && events[0].args[1]).to.equal(
-        SELL_AMOUNT
-      );
+      expect(events[0] && events[0].args[1] && events[0].args[1]).to.equal(SELL_AMOUNT);
 
       // check pending USDC balance
-      expect(await dowgoERC20.usdcUserBalances(addr1.address)).to.equal(
-        initialPrice
-      );
+      expect(await dowgoERC20.usdcUserBalances(addr1.address)).to.equal(initialPrice);
       // check dowgo balance
       expect(await dowgoERC20.balanceOf(addr1.address)).to.equal(0);
 
       // withdraw
-      const withdrawTx = await dowgoERC20
-        .connect(addr1)
-        .withdraw_usdc(initialPrice);
+      const withdrawTx = await dowgoERC20.connect(addr1).withdraw_usdc(initialPrice);
       await withdrawTx.wait();
 
       // check for WithdrawUSDC Event
       const eventFilter2 = dowgoERC20.filters.WithdrawUSDC(addr1.address);
       let events2 = await dowgoERC20.queryFilter(eventFilter2);
-      expect(events2[0] && events2[0].args[1] && events2[0].args[1]).to.equal(
-        initialPrice
-      );
+      expect(events2[0] && events2[0].args[1] && events2[0].args[1]).to.equal(initialPrice);
 
       // check pending usdc balance
-      expect(await dowgoERC20.usdcUserBalances(addr1.address)).to.equal(
-        BigNumber.from(0)
-      );
+      expect(await dowgoERC20.usdcUserBalances(addr1.address)).to.equal(BigNumber.from(0));
 
       // check that user 1 is back to owning 100 USDC minus fee or buygin in the first place
       expect(await usdcERC20.balanceOf(addr1.address)).to.equal(
@@ -93,9 +89,7 @@ describe("DowgoERC20 - sell", function () {
 
       try {
         // Create sell tx
-        const sellTx = await dowgoERC20
-          .connect(addr1)
-          .sell_dowgo(SELL_AMOUNT_TOO_HIGH);
+        const sellTx = await dowgoERC20.connect(addr1).sell_dowgo(SELL_AMOUNT_TOO_HIGH);
 
         // wait until the transaction is mined
         await sellTx.wait();
@@ -107,13 +101,9 @@ describe("DowgoERC20 - sell", function () {
 
       // Check that supply of both USDC and Dowgo hasnt been changed
       expect(await dowgoERC20.totalUSDCReserve()).to.equal(
-        initialUSDCReserve.add(
-          SELL_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT)
-        )
+        initialUSDCReserve.add(SELL_AMOUNT.mul(initialPrice).div(ONE_DOWGO_UNIT))
       );
-      expect(await dowgoERC20.totalSupply()).to.equal(
-        initialDowgoSupply.add(SELL_AMOUNT)
-      );
+      expect(await dowgoERC20.totalSupply()).to.equal(initialDowgoSupply.add(SELL_AMOUNT));
 
       // check for SellDowgo Event not fired
       const eventFilter = dowgoERC20.filters.SellDowgo(addr1.address);
@@ -122,9 +112,7 @@ describe("DowgoERC20 - sell", function () {
     });
     it("Should let user 1 - after it has been blacklisted - sell dowgo and cash out", async function () {
       // Blacklist user 1
-      const blacklistUser1Tx = await dowgoERC20
-        .connect(dowgoAdmin)
-        .revoke_whitelist(addr1.address);
+      const blacklistUser1Tx = await dowgoERC20.connect(dowgoAdmin).revoke_whitelist(addr1.address);
       await blacklistUser1Tx.wait();
 
       // sell
@@ -134,34 +122,24 @@ describe("DowgoERC20 - sell", function () {
       // check for Sell Event
       const eventFilter = dowgoERC20.filters.SellDowgo(addr1.address);
       let events = await dowgoERC20.queryFilter(eventFilter);
-      expect(events[0] && events[0].args[1] && events[0].args[1]).to.equal(
-        SELL_AMOUNT
-      );
+      expect(events[0] && events[0].args[1] && events[0].args[1]).to.equal(SELL_AMOUNT);
 
       // check pending USDC balance
-      expect(await dowgoERC20.usdcUserBalances(addr1.address)).to.equal(
-        initialPrice
-      );
+      expect(await dowgoERC20.usdcUserBalances(addr1.address)).to.equal(initialPrice);
       // check dowgo balance
       expect(await dowgoERC20.balanceOf(addr1.address)).to.equal(0);
 
       // withdraw
-      const withdrawTx = await dowgoERC20
-        .connect(addr1)
-        .withdraw_usdc(initialPrice);
+      const withdrawTx = await dowgoERC20.connect(addr1).withdraw_usdc(initialPrice);
       await withdrawTx.wait();
 
       // check for WithdrawUSDC Event
       const eventFilter2 = dowgoERC20.filters.WithdrawUSDC(addr1.address);
       let events2 = await dowgoERC20.queryFilter(eventFilter2);
-      expect(events2[0] && events2[0].args[1] && events2[0].args[1]).to.equal(
-        initialPrice
-      );
+      expect(events2[0] && events2[0].args[1] && events2[0].args[1]).to.equal(initialPrice);
 
       // check pending usdc balance
-      expect(await dowgoERC20.usdcUserBalances(addr1.address)).to.equal(
-        BigNumber.from(0)
-      );
+      expect(await dowgoERC20.usdcUserBalances(addr1.address)).to.equal(BigNumber.from(0));
 
       // check that user 1 is back to owning 100 USDC minus fee or buygin in the first place
       expect(await usdcERC20.balanceOf(addr1.address)).to.equal(
@@ -169,29 +147,33 @@ describe("DowgoERC20 - sell", function () {
       );
     });
     it("Should not let user 1 sell too much tokens (more than 3%*10%=0.3% of total supply =3DWG)", async function () {
+      const {
+        dowgoERC20: lowdDowgoERC20,
+        addr1: lowAddr1,
+        dowgoAdmin: lowDowgoAdmin,
+      } = await setupTestEnvDowgoERC20({
+        initialPrice: lowInitialPrice,
+        initialUSDCReserve: lowInitialUSDCReserve,
+        initialUser1USDCBalance: lowInitialUser1USDCBalance,
+        mockUSDCSupply: lowMockUSDCSupply,
+        initialDowgoSupply: lowInitialDowgoSupply,
+      });
+
       const SELL_AMOUNT_TOO_HIGH = SELL_AMOUNT.mul(10);
 
-      const usdcReserveBefore = await dowgoERC20.totalUSDCReserve();
-      const dowgoSupplyBefore = await dowgoERC20.totalSupply();
+      const usdcReserveBefore = await lowdDowgoERC20.totalUSDCReserve();
+      const dowgoSupplyBefore = await lowdDowgoERC20.totalSupply();
 
       // First, the admin should send the tokens to the user
-      await approveTransfer(
-        dowgoERC20,
-        dowgoAdmin,
-        addr1.address,
-        SELL_AMOUNT_TOO_HIGH
-      );
-
-      const transferTx = await dowgoERC20
-        .connect(dowgoAdmin)
-        .transfer(addr1.address, SELL_AMOUNT_TOO_HIGH);
+      await approveTransfer(lowdDowgoERC20, lowDowgoAdmin, lowAddr1.address, SELL_AMOUNT_TOO_HIGH);
+      const transferTx = await lowdDowgoERC20
+        .connect(lowDowgoAdmin)
+        .transfer(lowAddr1.address, SELL_AMOUNT_TOO_HIGH);
       await transferTx.wait();
 
       try {
         // Create sell tx
-        const sellTx = await dowgoERC20
-          .connect(addr1)
-          .sell_dowgo(SELL_AMOUNT_TOO_HIGH);
+        const sellTx = await lowdDowgoERC20.connect(lowAddr1).sell_dowgo(SELL_AMOUNT_TOO_HIGH);
 
         // wait until the transaction is mined
         await sellTx.wait();
@@ -202,12 +184,12 @@ describe("DowgoERC20 - sell", function () {
       }
 
       // Check that supply of both USDC and Dowgo hasnt been changed
-      expect(await dowgoERC20.totalUSDCReserve()).to.equal(usdcReserveBefore);
-      expect(await dowgoERC20.totalSupply()).to.equal(dowgoSupplyBefore);
+      expect(await lowdDowgoERC20.totalUSDCReserve()).to.equal(usdcReserveBefore);
+      expect(await lowdDowgoERC20.totalSupply()).to.equal(dowgoSupplyBefore);
 
       // check for SellDowgo Event not fired
-      const eventFilter = dowgoERC20.filters.SellDowgo(addr1.address);
-      let events = await dowgoERC20.queryFilter(eventFilter);
+      const eventFilter = lowdDowgoERC20.filters.SellDowgo(lowAddr1.address);
+      let events = await lowdDowgoERC20.queryFilter(eventFilter);
       expect(events.length === 0).to.be.true;
     });
   });
@@ -216,17 +198,11 @@ describe("DowgoERC20 - sell", function () {
     const SELL_AMOUNT_TOO_HIGH = initialDowgoSupply;
 
     it("Should let admin sell too much tokens (more than 3%*10%=0.3% of total supply =3DWG) using admin_sell", async function () {
-      let initialAdminUSDCBalance = await usdcERC20.balanceOf(
-        dowgoAdmin.address
-      );
-      let initialContractUSDCBalance = await usdcERC20.balanceOf(
-        dowgoERC20.address
-      );
+      let initialAdminUSDCBalance = await usdcERC20.balanceOf(dowgoAdmin.address);
+      let initialContractUSDCBalance = await usdcERC20.balanceOf(dowgoERC20.address);
       let initialContractUSDCReserve = await dowgoERC20.totalUSDCReserve();
       // Create sell tx
-      const sellTx = await dowgoERC20
-        .connect(dowgoAdmin)
-        .admin_sell_dowgo(SELL_AMOUNT_TOO_HIGH);
+      const sellTx = await dowgoERC20.connect(dowgoAdmin).admin_sell_dowgo(SELL_AMOUNT_TOO_HIGH);
 
       // wait until the transaction is mined
       await sellTx.wait();
@@ -237,14 +213,10 @@ describe("DowgoERC20 - sell", function () {
         .div(BigNumber.from(10000));
 
       // check pending USDC balance
-      expect(await dowgoERC20.usdcUserBalances(dowgoAdmin.address)).to.equal(
-        usdcFromAdminSell
-      );
+      expect(await dowgoERC20.usdcUserBalances(dowgoAdmin.address)).to.equal(usdcFromAdminSell);
 
       // withdraw
-      const withdrawTx = await dowgoERC20
-        .connect(dowgoAdmin)
-        .withdraw_usdc(usdcFromAdminSell);
+      const withdrawTx = await dowgoERC20.connect(dowgoAdmin).withdraw_usdc(usdcFromAdminSell);
       await withdrawTx.wait();
 
       // check that admin owns more USDC
@@ -264,13 +236,9 @@ describe("DowgoERC20 - sell", function () {
       );
 
       // check for second admin Buy Event
-      const eventFilter2 = dowgoERC20.filters.AdminSellDowgo(
-        dowgoAdmin.address
-      );
+      const eventFilter2 = dowgoERC20.filters.AdminSellDowgo(dowgoAdmin.address);
       let events2 = await dowgoERC20.queryFilter(eventFilter2);
-      expect(events2[0] && events2[0].args[1] && events2[0].args[1]).to.equal(
-        SELL_AMOUNT_TOO_HIGH
-      );
+      expect(events2[0] && events2[0].args[1] && events2[0].args[1]).to.equal(SELL_AMOUNT_TOO_HIGH);
     });
     it("Should not let non-admin use admin_sell", async function () {
       const usdcReserveBefore = await dowgoERC20.totalUSDCReserve();
@@ -278,9 +246,7 @@ describe("DowgoERC20 - sell", function () {
 
       try {
         // Create sell tx
-        const sellTx = await dowgoERC20
-          .connect(addr1)
-          .admin_sell_dowgo(SELL_AMOUNT_TOO_HIGH);
+        const sellTx = await dowgoERC20.connect(addr1).admin_sell_dowgo(SELL_AMOUNT_TOO_HIGH);
 
         // wait until the transaction is mined
         await sellTx.wait();
@@ -303,48 +269,34 @@ describe("DowgoERC20 - sell", function () {
   describe("DowgoERC20 - force sell", function () {
     it("Should force user 1 - after it has been blacklisted - to sell dowgo with admin and have them cash out", async function () {
       // Blacklist user 1
-      const blacklistUser1Tx = await dowgoERC20
-        .connect(dowgoAdmin)
-        .revoke_whitelist(addr1.address);
+      const blacklistUser1Tx = await dowgoERC20.connect(dowgoAdmin).revoke_whitelist(addr1.address);
       await blacklistUser1Tx.wait();
 
       // force sell
-      const forceSellTx = await dowgoERC20
-        .connect(dowgoAdmin)
-        .force_sell_dowgo(addr1.address);
+      const forceSellTx = await dowgoERC20.connect(dowgoAdmin).force_sell_dowgo(addr1.address);
       await forceSellTx.wait();
 
       // check for Sell Event
       const eventFilter = dowgoERC20.filters.SellDowgo(addr1.address);
       let events = await dowgoERC20.queryFilter(eventFilter);
-      expect(events[0] && events[0].args[1] && events[0].args[1]).to.equal(
-        SELL_AMOUNT
-      );
+      expect(events[0] && events[0].args[1] && events[0].args[1]).to.equal(SELL_AMOUNT);
 
       // check dowgo balance
       expect(await dowgoERC20.balanceOf(addr1.address)).to.equal(0);
       // check pending USDC balance
-      expect(await dowgoERC20.usdcUserBalances(addr1.address)).to.equal(
-        initialPrice
-      );
+      expect(await dowgoERC20.usdcUserBalances(addr1.address)).to.equal(initialPrice);
 
       // withdraw
-      const withdrawTx = await dowgoERC20
-        .connect(addr1)
-        .withdraw_usdc(initialPrice);
+      const withdrawTx = await dowgoERC20.connect(addr1).withdraw_usdc(initialPrice);
       await withdrawTx.wait();
 
       // check for WithdrawUSDC Event
       const eventFilter2 = dowgoERC20.filters.WithdrawUSDC(addr1.address);
       let events2 = await dowgoERC20.queryFilter(eventFilter2);
-      expect(events2[0] && events2[0].args[1] && events2[0].args[1]).to.equal(
-        initialPrice
-      );
+      expect(events2[0] && events2[0].args[1] && events2[0].args[1]).to.equal(initialPrice);
 
       // check pending usdc balance
-      expect(await dowgoERC20.usdcUserBalances(addr1.address)).to.equal(
-        BigNumber.from(0)
-      );
+      expect(await dowgoERC20.usdcUserBalances(addr1.address)).to.equal(BigNumber.from(0));
 
       // check that user 1 is back to owning 100 USDC minus fee or buygin in the first place
       expect(await usdcERC20.balanceOf(addr1.address)).to.equal(
@@ -356,16 +308,12 @@ describe("DowgoERC20 - sell", function () {
       const dowgoSupplyBefore = await dowgoERC20.totalSupply();
 
       // Blacklist user 1
-      const blacklistUser1Tx = await dowgoERC20
-        .connect(dowgoAdmin)
-        .revoke_whitelist(addr1.address);
+      const blacklistUser1Tx = await dowgoERC20.connect(dowgoAdmin).revoke_whitelist(addr1.address);
       await blacklistUser1Tx.wait();
 
       try {
         // force sell
-        const forceSellTx = await dowgoERC20
-          .connect(addr2)
-          .force_sell_dowgo(addr1.address);
+        const forceSellTx = await dowgoERC20.connect(addr2).force_sell_dowgo(addr1.address);
         await forceSellTx.wait();
       } catch (e: any) {
         expect(e.toString()).to.equal(

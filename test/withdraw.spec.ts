@@ -2,7 +2,14 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { DowgoERC20, ERC20 } from "../typechain";
-import { ONE_USDC_UNIT } from "./test-constants";
+import {
+  ONE_USDC_UNIT,
+  initialDowgoSupply,
+  initialPrice,
+  initialUSDCReserve,
+  initialUser1USDCBalance,
+  mockUSDCSupply,
+} from "./test-constants";
 import { setupTestEnvDowgoERC20 } from "./testUtils/setup";
 
 describe("DowgoERC20 - withdraw", function () {
@@ -12,13 +19,17 @@ describe("DowgoERC20 - withdraw", function () {
 
   // buy tokens before selling them
   beforeEach(async () => {
-    ({ dowgoERC20, addr2, usdcERC20 } = await setupTestEnvDowgoERC20());
+    ({ dowgoERC20, addr2, usdcERC20 } = await setupTestEnvDowgoERC20({
+      initialPrice,
+      initialUSDCReserve,
+      initialUser1USDCBalance,
+      mockUSDCSupply,
+      initialDowgoSupply,
+    }));
   });
   it("Should not let user withdraw with no balance", async function () {
     try {
-      const decreaseTx = await dowgoERC20
-        .connect(addr2)
-        .withdraw_usdc(ONE_USDC_UNIT);
+      const decreaseTx = await dowgoERC20.connect(addr2).withdraw_usdc(ONE_USDC_UNIT);
 
       // wait until the transaction is mined
       await decreaseTx.wait();
@@ -34,16 +45,10 @@ describe("DowgoERC20 - withdraw", function () {
     expect(events2.length).to.equal(0);
 
     // check pending total supply of usdc on the contract
-    expect(await dowgoERC20.usdcUserBalances(dowgoERC20.address)).to.equal(
-      BigNumber.from(0)
-    );
+    expect(await dowgoERC20.usdcUserBalances(dowgoERC20.address)).to.equal(BigNumber.from(0));
 
     // check that user 2 still has no usdc
-    expect(await dowgoERC20.usdcUserBalances(addr2.address)).to.equal(
-      BigNumber.from(0)
-    );
-    expect(await usdcERC20.balanceOf(addr2.address)).to.equal(
-      BigNumber.from(0)
-    );
+    expect(await dowgoERC20.usdcUserBalances(addr2.address)).to.equal(BigNumber.from(0));
+    expect(await usdcERC20.balanceOf(addr2.address)).to.equal(BigNumber.from(0));
   });
 });

@@ -10,6 +10,7 @@ import {
   ONE_DOWGO_UNIT,
   initialPrice,
   transactionFee,
+  mockUSDCSupply,
 } from "./test-constants";
 import { approveTransfer, setupTestEnvDowgoERC20 } from "./testUtils";
 
@@ -27,18 +28,18 @@ describe("DowgoERC20 - fees", function () {
   const TOTAL_USDC_COST = USDC_COST_NO_FEE.add(USDC_FEE);
 
   beforeEach(async () => {
-    ({ dowgoERC20, addr1, addr2, addr3, usdcERC20, dowgoAdmin } =
-      await setupTestEnvDowgoERC20());
+    ({ dowgoERC20, addr1, addr2, addr3, usdcERC20, dowgoAdmin } = await setupTestEnvDowgoERC20({
+      initialPrice,
+      initialUSDCReserve,
+      initialUser1USDCBalance,
+      mockUSDCSupply,
+      initialDowgoSupply,
+    }));
 
     // Let user 1 buy 1 Dowgo
 
     // Approve erc20 transfer
-    await approveTransfer(
-      usdcERC20,
-      addr1,
-      dowgoERC20.address,
-      TOTAL_USDC_COST
-    );
+    await approveTransfer(usdcERC20, addr1, dowgoERC20.address, TOTAL_USDC_COST);
 
     // Create buy tx
     const buyTx = await dowgoERC20.connect(addr1).buy_dowgo(BUY_AMOUNT);
@@ -53,12 +54,7 @@ describe("DowgoERC20 - fees", function () {
     // Let user 1 buy 1 Dowgo
 
     // Approve erc20 transfer
-    await approveTransfer(
-      usdcERC20,
-      addr1,
-      dowgoERC20.address,
-      TOTAL_USDC_COST
-    );
+    await approveTransfer(usdcERC20, addr1, dowgoERC20.address, TOTAL_USDC_COST);
 
     // Create buy tx
     const buyTx = await dowgoERC20.connect(addr1).buy_dowgo(BUY_AMOUNT);
@@ -71,21 +67,15 @@ describe("DowgoERC20 - fees", function () {
   });
   it("Should let admin withdraw the fee", async function () {
     // Create withdraw tx
-    const withdrawTx = await dowgoERC20
-      .connect(dowgoAdmin)
-      .withdraw_treasury(USDC_FEE);
+    const withdrawTx = await dowgoERC20.connect(dowgoAdmin).withdraw_treasury(USDC_FEE);
 
     // wait until the transaction is mined
     await withdrawTx.wait();
 
     // check for WithdrawUSDC Event
-    const eventFilter2 = dowgoERC20.filters.WithdrawUSDCTreasury(
-      dowgoAdmin.address
-    );
+    const eventFilter2 = dowgoERC20.filters.WithdrawUSDCTreasury(dowgoAdmin.address);
     let events2 = await dowgoERC20.queryFilter(eventFilter2);
-    expect(events2[0] && events2[0].args[1] && events2[0].args[1]).to.equal(
-      USDC_FEE
-    );
+    expect(events2[0] && events2[0].args[1] && events2[0].args[1]).to.equal(USDC_FEE);
 
     // check pending usdc balances
     // USDC balance on tresury
@@ -102,9 +92,7 @@ describe("DowgoERC20 - fees", function () {
   it("Should not let user 1, who is not an admin, withdraw from treasury", async function () {
     try {
       // Create withdraw tx
-      const withdrawTx = await dowgoERC20
-        .connect(addr1)
-        .withdraw_treasury(USDC_FEE);
+      const withdrawTx = await dowgoERC20.connect(addr1).withdraw_treasury(USDC_FEE);
 
       // wait until the transaction is mined
       await withdrawTx.wait();

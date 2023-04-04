@@ -1,6 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
-import { ONE_USDC_UNIT } from "../test-constants";
+import { ONE_DOWGO_UNIT, ONE_USDC_UNIT } from "../test-constants";
 
 import { DowgoERC20, ERC20, ERC20PresetFixedSupply } from "../../typechain";
 
@@ -20,9 +20,7 @@ export const sendUSDCToUser = async (
   to: string,
   amount: BigNumber
 ) => {
-  const sendToUserTx = await usdcERC20
-    .connect(usdcCreator)
-    .transfer(to, amount);
+  const sendToUserTx = await usdcERC20.connect(usdcCreator).transfer(to, amount);
   await sendToUserTx.wait();
 };
 
@@ -48,15 +46,9 @@ export const increaseDowgoSupply = async (
     usdcERC20,
     dowgoAdmin,
     dowgoERC20.address,
-    amount
-      .mul(price)
-      .mul(initRatio)
-      .div(ONE_USDC_UNIT)
-      .div(BigNumber.from(10000))
+    amount.mul(price).mul(initRatio).div(ONE_DOWGO_UNIT).div(BigNumber.from(10000))
   );
-  const increaseTx = await dowgoERC20
-    .connect(dowgoAdmin)
-    .admin_buy_dowgo(amount);
+  const increaseTx = await dowgoERC20.connect(dowgoAdmin).admin_buy_dowgo(amount);
   await increaseTx.wait();
 };
 
